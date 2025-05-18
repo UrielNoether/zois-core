@@ -1,3 +1,7 @@
+import styles from "@/styles.css";
+
+
+
 interface ModData {
     modName: string
     modKey: string
@@ -6,11 +10,17 @@ interface ModData {
 }
 
 export let MOD_DATA: ModData = {
-    modName: "CORE_NOT_REGISTERED",
-    modKey: "CORE_NOT_REGISTERED"
+    modName: "",
+    modKey: ""
 };
 
 export function registerCore(modData: ModData): void {
+    if (!window.ZOISCORE_STYLES_LOADED) {
+        const style = document.createElement("style");
+        style.innerHTML = styles;
+        document.head.append(style);
+        window.ZOISCORE_STYLES_LOADED = true;
+    }
     MOD_DATA = { ...modData };
 }
 

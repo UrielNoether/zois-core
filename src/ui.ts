@@ -171,7 +171,11 @@ function loadSubscreen(subscreen: BaseSubscreen): void {
         height: 90,
         icon: "Icons/Exit.png"
     }).addEventListener("click", () => subscreen.exit());
+    CommonSetScreen("Character", "InformationSheet");
     subscreen.load();
+    if (subscreenHooks[subscreen.name]) {
+        subscreenHooks[subscreen.name].forEach((hook) => hook(subscreen));
+    }
 }
 
 export function setPreviousSubscreen(): void {
@@ -232,8 +236,8 @@ export abstract class BaseSubscreen {
         iconWidth
     }: CreateButtonArgs): HTMLButtonElement {
         const btn = document.createElement("button");
-        btn.classList.add("lcButton");
-        btn.setAttribute("data-lc-style", style);
+        btn.classList.add("zcButton");
+        btn.setAttribute("data-zc-style", style);
         btn.style.display = "flex";
         btn.style.alignItems = "center";
         btn.style.justifyContent = "center";
@@ -309,7 +313,7 @@ export abstract class BaseSubscreen {
         fontSize = "auto", anchor = "top-left", padding, place = true
     }: CreateInputArgs): HTMLInputElement | HTMLTextAreaElement {
         const input = document.createElement(textArea ? "textarea" : "input");
-        input.classList.add("lcInput");
+        input.classList.add("zcInput");
         if (placeholder) input.placeholder = placeholder;
         if (value) input.value = value;
 
@@ -336,7 +340,7 @@ export abstract class BaseSubscreen {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox"
         checkbox.checked = isChecked;
-        checkbox.classList.add("lcCheckbox", "checkbox");
+        checkbox.classList.add("zcCheckbox", "checkbox");
 
         const p = document.createElement("p");
         p.textContent = text;
@@ -494,4 +498,11 @@ export abstract class BaseSubscreen {
         this.htmlElements.push(img);
         return img;
     }
+}
+
+let subscreenHooks: Record<string, ((subscreen: BaseSubscreen) => void)[]> = {};
+
+export function hookSubscreen(subscreenName: string, hook: (subscreen: BaseSubscreen) => void) {
+    if (!subscreenHooks[subscreenName]) subscreenHooks[subscreenName] = [];
+    subscreenHooks[subscreenName].push(hook);
 }
