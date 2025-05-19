@@ -7,8 +7,9 @@
     "build": "tsup"
   },
   "author": "Zoi",
-  "license": "ISC",
+  "license": "MIT",
   "packageManager": "pnpm@10.6.5",
+  "files": ["dist"],
   "type": "module",
   "pnpm": {
     "onlyBuiltDependencies": [
