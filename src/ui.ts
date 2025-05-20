@@ -82,6 +82,16 @@ interface CreateImageArgs {
     width: number
 }
 
+interface CreateBackNextButtonArgs {
+    x: number
+    y: number
+    width: number
+    height: number
+    items: [string, any?][]
+    currentIndex: number
+    onChange?: (value: any) => void
+}
+
 function getRelativeHeight(height: number) {
     return height * (MainCanvas.canvas.clientHeight / 1000);
 }
@@ -189,8 +199,12 @@ export function setSubscreen(subscreen: BaseSubscreen | null): void {
     if (previousSubscreen) previousSubscreen.unload();
 }
 
-export let currentSubscreen: BaseSubscreen | null;
-export let previousSubscreen: BaseSubscreen | null = null;
+export function getCurrentSubscreen(): BaseSubscreen {
+    return currentSubscreen;
+}
+
+let currentSubscreen: BaseSubscreen | null;
+let previousSubscreen: BaseSubscreen | null = null;
 
 
 export abstract class BaseSubscreen {
@@ -497,6 +511,52 @@ export abstract class BaseSubscreen {
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(img);
         return img;
+    }
+
+    createBackNextButton({
+        x, y, width, height, items, currentIndex,
+        onChange
+    }: CreateBackNextButtonArgs): HTMLDivElement {
+        const div = document.createElement("div");
+        div.classList.add("zcBackNextButton");
+
+        const backBtn = document.createElement("button");
+        backBtn.style.cssText = "position: absolute; left: 1vw;";
+        backBtn.textContent = "🡄";
+        backBtn.addEventListener("click", () => {
+            if (currentIndex === 0) return;
+            currentIndex--;
+            text.textContent = items[currentIndex][0];
+            if (typeof onChange === "function") onChange(items[currentIndex][1]);
+        });
+
+        const nextBtn = document.createElement("button");
+        nextBtn.style.cssText = "position: absolute; right: 1vw;";
+        nextBtn.textContent = "🡆";
+        nextBtn.addEventListener("click", () => {
+            if (currentIndex === items.length - 1) return;
+            currentIndex++;
+            text.textContent = items[currentIndex][0];
+            if (typeof onChange === "function") onChange(items[currentIndex][1]);
+        });
+
+        const text = document.createElement("p");
+        text.textContent = items[currentIndex][0];
+
+        div.append(backBtn, text, nextBtn);
+
+        const setProperties = () => {
+            if (x && y) setPosition(div, x, y);
+            setSize(div, width, height);
+            autosetFontSize(text);
+        }
+
+        setProperties();
+        window.addEventListener("resize", setProperties);
+        document.body.append(div);
+        this.resizeEventListeners.push(setProperties);
+        this.htmlElements.push(div);
+        return div;
     }
 }
 

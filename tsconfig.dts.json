@@ -1,8 +1,8 @@
 {
   "include": [
     "node_modules/bc-stubs/bc/**/*.d.ts",
-    "**/*.js",
-    "**/*.ts",
+    "src/*.ts",
+    "types.d.ts"
   ],
   "compilerOptions": {
     "target": "ESNext",
@@ -14,7 +14,8 @@
     "alwaysStrict": false,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
-    "noEmit": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "baseUrl": "src",
     "outDir": "dist",
     "paths": {

@@ -65,7 +65,7 @@ export function chatSendActionMessage(msg: string, target: undefined | number = 
 
 export function chatSendModMessage<T>(msg: string, _data: T = null, targetNumber = null): void {
 	const data: ServerChatRoomMessage = {
-		Content: MOD_DATA.modKey,
+		Content: MOD_DATA.key,
 		Dictionary: {
 			// @ts-ignore
 			msg
@@ -84,7 +84,7 @@ export function chatSendBeep(data: any, targetId: number): void {
 		BeepType: "Leash",
 		MemberNumber: targetId,
 		Message: JSON.stringify({
-			type: MOD_DATA.modKey,
+			type: MOD_DATA.key,
 			...data
 		})
 	};

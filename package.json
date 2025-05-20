@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "The core for the my mods, which contains a shared code reused in all my mods",
   "scripts": {
-    "dev": "nodemon --watch src/**/*.* --exec tsup",
-    "build": "tsup"
+    "build": "node scripts/build.mjs"
   },
   "author": "Zoi",
   "license": "MIT",
   "packageManager": "pnpm@10.6.5",
-  "files": ["dist"],
-  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "type": "commonjs",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
@@ -23,7 +24,6 @@
     "bc-stubs": "116.0.0-Beta.1",
     "esbuild": "^0.25.4",
     "nodemon": "^3.1.10",
-    "tsup": "^8.5.0",
     "typescript": "^5.8.3"
   }
 }

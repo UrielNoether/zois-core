@@ -1,18 +1,18 @@
-import styles from "@/styles.css";
-
+import styles from "./styles.css";
+import { registerMod } from "./modsApi";
 
 
 interface ModData {
-    modName: string
-    modKey: string
+    name: string
+    fullName: string
+    key: string
+    version: string
+    repository?: string
     chatMessageBackground?: string
     chatMessageColor?: string
 }
 
-export let MOD_DATA: ModData = {
-    modName: "",
-    modKey: ""
-};
+export let MOD_DATA: ModData;
 
 export function registerCore(modData: ModData): void {
     if (!window.ZOISCORE_STYLES_LOADED) {
@@ -22,6 +22,7 @@ export function registerCore(modData: ModData): void {
         window.ZOISCORE_STYLES_LOADED = true;
     }
     MOD_DATA = { ...modData };
+    registerMod();
 }
 
 export function sleep(ms: number): Promise<() => {}> {

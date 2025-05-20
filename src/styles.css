@@ -55,14 +55,33 @@
     color: var(--tmd-text, black);
 }
 
+.zcBackNextButton {
+    display: flex;
+    column-gap: 2vw;
+    justify-content: center;
+    align-items: center;
+    background: var(--tmd-element, white);
+    font-family: Emilys Candy;
+    color: var(--tmd-text, black);
+    border: 2px solid var(--tmd-accent, black);
+    border-radius: 4px;
+}
+
+.zcBackNextButton button {
+    cursor: pointer;
+    background: var(--tmd-element, rgb(240, 240, 240));
+    border-radius: 4px;
+    height: 140%;
+    aspect-ratio: 1/1;
+    border: 2px solid var(--tmd-accent, black);
+    font-size: 3.5vw;
+}
+
+.zcBackNextButton button:hover {
+    background: var(--tmd-element-hover, rgb(222, 222, 222));
+}
+
 .zcDisabled {
     pointer-events: none;
     opacity: 0.6;
-}
-
-.paciCheckbox::before {
-	background-image: url("https://raw.githubusercontent.com/FurryZoi/Littlish-Club/refs/heads/main/src/images/pacifier.png") !important;
-	background-size: cover !important;
-    clip-path: none !important;
-    background-color: unset !important;
 }
