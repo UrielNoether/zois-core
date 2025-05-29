@@ -21,24 +21,24 @@
     color: var(--tmd-accent-hover, #015a8c);
 }
 
-.zcButton[data-lc-style="green"] {
+.zcButton[data-zc-style="green"] {
     background: rgb(124, 255, 124);
     border-color: rgb(82, 204, 82);
     color: black;
 }
 
-.zcButton[data-lc-style="green"]:hover {
+.zcButton[data-zc-style="green"]:hover {
     background: rgb(94, 197, 94);
     color: black;
 }
 
-.zcButton[data-lc-style="inverted"] {
+.zcButton[data-zc-style="inverted"] {
     background: var(--tmd-accent, #303030);
     border: none;
     color: var(--tmd-text, white);
 }
 
-.zcButton[data-lc-style="inverted"]:hover {
+.zcButton[data-zc-style="inverted"]:hover {
     background: var(--tmd-accent-hover, #474747);
 }
 
@@ -65,20 +65,6 @@
     color: var(--tmd-text, black);
     border: 2px solid var(--tmd-accent, black);
     border-radius: 4px;
-}
-
-.zcBackNextButton button {
-    cursor: pointer;
-    background: var(--tmd-element, rgb(240, 240, 240));
-    border-radius: 4px;
-    height: 140%;
-    aspect-ratio: 1/1;
-    border: 2px solid var(--tmd-accent, black);
-    font-size: 3.5vw;
-}
-
-.zcBackNextButton button:hover {
-    background: var(--tmd-element-hover, rgb(222, 222, 222));
 }
 
 .zcDisabled {

@@ -1,3 +1,5 @@
+type Anchor = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
 interface CreateButtonArgs {
     text?: string
     x?: number
@@ -7,11 +9,13 @@ interface CreateButtonArgs {
     height?: number
     padding?: number
     style?: "default" | "green" | "inverted"
-    anchor?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    anchor?: Anchor
     place?: boolean
     icon?: string
     iconAbsolutePosition?: boolean
     iconWidth?: string
+    onClick?: () => void
+    isDisabled?: () => boolean
 }
 
 interface CreateTextArgs {
@@ -24,7 +28,7 @@ interface CreateTextArgs {
     width?: number
     height?: number
     padding?: number
-    anchor?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    anchor?: Anchor
     place?: boolean
 }
 
@@ -37,9 +41,12 @@ interface CreateInputArgs {
     height?: number
     textArea?: boolean
     fontSize?: number | "auto"
-    anchor?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    anchor?: Anchor
     padding?: number
     place?: boolean
+    onChange?: () => void
+    onInput?: () => void
+    isDisabled?: () => boolean
 }
 
 interface CreateCheckboxArgs {
@@ -48,8 +55,10 @@ interface CreateCheckboxArgs {
     y?: number
     width?: number
     text: string
-    anchor?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    anchor?: Anchor
     place?: boolean
+    onChange?: () => void
+    isDisabled?: () => boolean
 }
 
 interface CreateScrollViewArgs {
@@ -58,7 +67,7 @@ interface CreateScrollViewArgs {
     y: number
     width: number,
     height?: number
-    anchor?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    anchor?: Anchor
 }
 
 interface CreateInputListArgs {
@@ -69,10 +78,12 @@ interface CreateInputListArgs {
     width: number
     height?: number
     fontSize?: number | "auto"
-    anchor?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+    anchor?: Anchor
     padding?: number
     place?: boolean
     numbersOnly?: boolean
+    onChange?: (value: string[] | number[]) => void
+    isDisabled?: () => boolean
 }
 
 interface CreateImageArgs {
@@ -80,6 +91,7 @@ interface CreateImageArgs {
     x: number
     y: number
     width: number
+    anchor?: Anchor
 }
 
 interface CreateBackNextButtonArgs {
@@ -89,7 +101,9 @@ interface CreateBackNextButtonArgs {
     height: number
     items: [string, any?][]
     currentIndex: number
+    anchor?: Anchor
     onChange?: (value: any) => void
+    isDisabled?: () => boolean
 }
 
 function getRelativeHeight(height: number) {
@@ -104,20 +118,20 @@ function getRelativeY(yPos: number, anchorPosition: 'top' | 'bottom' = 'top') {
     const scaleY = MainCanvas.canvas.clientHeight / 1000;
     return anchorPosition === 'top'
         ? MainCanvas.canvas.offsetTop + yPos * scaleY
-        : MainCanvas.canvas.offsetTop + MainCanvas.canvas.clientHeight - yPos * scaleY;
+        : window.innerHeight - (MainCanvas.canvas.offsetTop + MainCanvas.canvas.clientHeight) + yPos * scaleY;
 }
 
 function getRelativeX(xPos: number, anchorPosition: 'left' | 'right' = 'left') {
     const scaleX = MainCanvas.canvas.clientWidth / 2000;
     return anchorPosition === 'left'
         ? MainCanvas.canvas.offsetLeft + xPos * scaleX
-        : MainCanvas.canvas.offsetLeft + MainCanvas.canvas.clientWidth - xPos * scaleX;
+        : window.innerWidth - (MainCanvas.canvas.offsetLeft + MainCanvas.canvas.clientWidth) + xPos * scaleX;
 }
 
 
-function setPosition(element: HTMLElement, xPos: number, yPos: number, anchorPosition: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' = 'top-left') {
-    const yAnchor = anchorPosition === 'top-left' || anchorPosition === 'top-right' ? 'top' : 'bottom';
-    const xAnchor = anchorPosition === 'top-left' || anchorPosition === 'bottom-left' ? 'left' : 'right';
+function setPosition(element: HTMLElement, xPos: number, yPos: number, anchor: Anchor = "top-left") {
+    const yAnchor = anchor === 'top-left' || anchor === 'top-right' ? 'top' : 'bottom';
+    const xAnchor = anchor === 'top-left' || anchor === 'bottom-left' ? 'left' : 'right';
 
     const y = getRelativeY(yPos, yAnchor);
     const x = getRelativeX(xPos, xAnchor);
@@ -130,12 +144,9 @@ function setPosition(element: HTMLElement, xPos: number, yPos: number, anchorPos
 }
 
 function setSize(element: HTMLElement, width: number, height: number) {
-    const w = getRelativeWidth(width);
-    const h = getRelativeHeight(height);
-
     Object.assign(element.style, {
-        "width": w + 'px',
-        "height": h + 'px',
+        width: getRelativeWidth(width) + 'px',
+        height: getRelativeHeight(height) + 'px',
     });
 }
 
@@ -181,7 +192,6 @@ function loadSubscreen(subscreen: BaseSubscreen): void {
         height: 90,
         icon: "Icons/Exit.png"
     }).addEventListener("click", () => subscreen.exit());
-    CommonSetScreen("Character", "InformationSheet");
     subscreen.load();
     if (subscreenHooks[subscreen.name]) {
         subscreenHooks[subscreen.name].forEach((hook) => hook(subscreen));
@@ -247,7 +257,7 @@ export abstract class BaseSubscreen {
         text, x, y, width, height, fontSize = "auto",
         anchor = "top-left", padding, style = "default",
         place = true, icon, iconAbsolutePosition = true,
-        iconWidth
+        iconWidth, onClick, isDisabled
     }: CreateButtonArgs): HTMLButtonElement {
         const btn = document.createElement("button");
         btn.classList.add("zcButton");
@@ -281,7 +291,7 @@ export abstract class BaseSubscreen {
         }
 
         const setProperties = () => {
-            if (x && y) setPosition(btn, x, y, anchor);
+            if (typeof x === "number" && typeof y === "number") setPosition(btn, x, y, anchor);
             setSize(btn, width, height);
             if (padding) setPadding(btn, padding);
             if (fontSize === "auto") autosetFontSize(btn);
@@ -289,6 +299,13 @@ export abstract class BaseSubscreen {
         }
 
         setProperties();
+        if (typeof isDisabled === "function" && isDisabled()) btn.classList.add("zcDisabled");
+        btn.addEventListener("click", () => {
+            if (typeof isDisabled === "function" && !isDisabled() && typeof onClick === "function") {
+                onClick();
+            }
+            if (isDisabled() && !btn.classList.contains("zcDisabled")) btn.classList.add("zcDisabled");
+        });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(btn);
         this.resizeEventListeners.push(setProperties);
@@ -307,7 +324,7 @@ export abstract class BaseSubscreen {
         p.style.fontFamily = "Emilys Candy";
 
         const setProperties = () => {
-            if (x && y) setPosition(p, x, y, anchor);
+            if (typeof x === "number" && typeof y === "number") setPosition(p, x, y, anchor);
             setSize(p, width, height);
             if (padding) setPadding(p, padding);
             if (fontSize === "auto") autosetFontSize(p);
@@ -324,7 +341,8 @@ export abstract class BaseSubscreen {
 
     createInput({
         value, placeholder, x, y, width, height, textArea = false,
-        fontSize = "auto", anchor = "top-left", padding, place = true
+        fontSize = "auto", anchor = "top-left", padding, place = true,
+        onChange, onInput, isDisabled
     }: CreateInputArgs): HTMLInputElement | HTMLTextAreaElement {
         const input = document.createElement(textArea ? "textarea" : "input");
         input.classList.add("zcInput");
@@ -332,7 +350,7 @@ export abstract class BaseSubscreen {
         if (value) input.value = value;
 
         const setProperties = () => {
-            if (x && y) setPosition(input, x, y, anchor);
+            if (typeof x === "number" && typeof y === "number") setPosition(input, x, y, anchor);
             setSize(input, width, height);
             if (padding) setPadding(input, padding);
             if (fontSize === "auto") autosetFontSize(input);
@@ -340,6 +358,19 @@ export abstract class BaseSubscreen {
         }
 
         setProperties();
+        if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
+        input.addEventListener("change", () => {
+            if (typeof isDisabled === "function" && !isDisabled() && typeof onChange === "function") {
+                onChange();
+            }
+            if (isDisabled() && !input.classList.contains("zcDisabled")) input.classList.add("zcDisabled");
+        });
+        input.addEventListener("input", () => {
+            if (typeof isDisabled === "function" && !isDisabled() && typeof onInput === "function") {
+                onInput();
+            }
+            if (isDisabled() && !input.classList.contains("zcDisabled")) input.classList.add("zcDisabled");
+        });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(input);
         this.resizeEventListeners.push(setProperties);
@@ -349,7 +380,8 @@ export abstract class BaseSubscreen {
 
     createCheckbox({
         text, x, y, isChecked, width,
-        anchor = "top-left", place = true
+        anchor = "top-left", place = true,
+        isDisabled, onChange
     }: CreateCheckboxArgs): HTMLInputElement {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox"
@@ -362,7 +394,7 @@ export abstract class BaseSubscreen {
         p.style.fontFamily = "Emilys Candy";
 
         const setProperties = () => {
-            if (x && y) setPosition(checkbox, x, y, anchor);
+            if (typeof x === "number" && typeof y === "number") setPosition(checkbox, x, y, anchor);
             setPosition(p, x + 100, y, anchor);
             setSize(checkbox, 65, 65);
             if (width) setSize(p, width, null);
@@ -370,6 +402,13 @@ export abstract class BaseSubscreen {
         }
 
         setProperties();
+        if (typeof isDisabled === "function" && isDisabled()) checkbox.classList.add("zcDisabled");
+        checkbox.addEventListener("change", () => {
+            if (typeof isDisabled === "function" && !isDisabled() && typeof onChange === "function") {
+                onChange();
+            }
+            if (isDisabled() && !checkbox.classList.contains("zcDisabled")) checkbox.classList.add("zcDisabled");
+        });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(checkbox, p);
         this.resizeEventListeners.push(setProperties);
@@ -387,7 +426,7 @@ export abstract class BaseSubscreen {
         if (scroll === "y") div.style.overflowY = "scroll";
 
         const setProperties = () => {
-            if (x && y) setPosition(div, x, y, anchor);
+            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y, anchor);
             setSize(div, width, height);
         }
 
@@ -402,7 +441,8 @@ export abstract class BaseSubscreen {
     createInputList({
         x, y, width, height, title, value,
         anchor = "top-left", place = true, numbersOnly = false,
-    }: CreateInputListArgs): [HTMLDivElement, () => (number[] | string[])] {
+        isDisabled, onChange
+    }: CreateInputListArgs): HTMLDivElement {
         const items = [];
         const div = document.createElement("div");
         div.style.cssText = `
@@ -435,6 +475,7 @@ export abstract class BaseSubscreen {
         }
 
         const addItem = (text: string) => {
+            if (isDisabled() && !input.classList.contains("zcDisabled")) return input.classList.add("zcDisabled");
             const item = document.createElement("div");
             item.style.cssText = "cursor: pointer; background: var(--tmd-element-hover, rgb(206, 206, 206)); color: var(--tmd-text, black); height: fit-content; padding: 0.8vw; border-radius: 0.8vw; font-size: clamp(8px, 2vw, 20px);";
             item.textContent = text;
@@ -445,20 +486,23 @@ export abstract class BaseSubscreen {
                 e.stopPropagation();
             });
             items.push(text);
+            onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         }
 
         const setProperties = () => {
-            if (x && y) setPosition(div, x, y, anchor);
+            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y, anchor);
             setSize(div, width, height);
         }
 
         addButton("Icons/Cancel.png", () => {
+            if (isDisabled() && !input.classList.contains("zcDisabled")) return input.classList.add("zcDisabled");
             itemsElement.innerHTML = "";
             items.splice(0, items.length);
             itemsElement.append(input);
             value.forEach((v) => addItem(String(v)));
         });
         addButton("Icons/Trash.png", () => {
+            if (isDisabled() && !input.classList.contains("zcDisabled")) return input.classList.add("zcDisabled");
             for (const c of [...itemsElement.children]) {
                 if (c.getAttribute("style").includes("border: 2px solid red;")) {
                     items.splice(items.indexOf(c.textContent), 1);
@@ -467,6 +511,7 @@ export abstract class BaseSubscreen {
             }
         });
         setProperties();
+        if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
         window.addEventListener("resize", setProperties);
         input.addEventListener("keypress", (e) => {
             if (document.activeElement === input) {
@@ -487,10 +532,7 @@ export abstract class BaseSubscreen {
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(div);
         value.forEach((v) => addItem(String(v)));
-        return [
-            div,
-            () => numbersOnly ? items.map((i) => parseInt(i)) : items
-        ];
+        return div;
     }
 
     createImage({
@@ -500,7 +542,7 @@ export abstract class BaseSubscreen {
         img.src = src;
 
         const setProperties = () => {
-            if (x && y) setPosition(img, x, y);
+            if (typeof x === "number" && typeof y === "number") setPosition(img, x, y);
             setSize(img, width, 0);
             img.style.height = "auto";
         }
@@ -515,15 +557,17 @@ export abstract class BaseSubscreen {
 
     createBackNextButton({
         x, y, width, height, items, currentIndex,
-        onChange
+        onChange, isDisabled
     }: CreateBackNextButtonArgs): HTMLDivElement {
         const div = document.createElement("div");
         div.classList.add("zcBackNextButton");
 
         const backBtn = document.createElement("button");
-        backBtn.style.cssText = "position: absolute; left: 1vw;";
+        backBtn.style.cssText = "position: absolute; left: 1vw; font-size: 3.5vw; aspect-ratio: 1/1; height: 140%;";
+        backBtn.classList.add("zcButton");
         backBtn.textContent = "🡄";
         backBtn.addEventListener("click", () => {
+            if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
             if (currentIndex === 0) return;
             currentIndex--;
             text.textContent = items[currentIndex][0];
@@ -531,9 +575,11 @@ export abstract class BaseSubscreen {
         });
 
         const nextBtn = document.createElement("button");
-        nextBtn.style.cssText = "position: absolute; right: 1vw;";
+        nextBtn.style.cssText = "position: absolute; right: 1vw; font-size: 3.5vw; aspect-ratio: 1/1; height: 140%;";
+        nextBtn.classList.add("zcButton");
         nextBtn.textContent = "🡆";
         nextBtn.addEventListener("click", () => {
+            if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
             if (currentIndex === items.length - 1) return;
             currentIndex++;
             text.textContent = items[currentIndex][0];
@@ -546,12 +592,13 @@ export abstract class BaseSubscreen {
         div.append(backBtn, text, nextBtn);
 
         const setProperties = () => {
-            if (x && y) setPosition(div, x, y);
+            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y);
             setSize(div, width, height);
             autosetFontSize(text);
         }
 
         setProperties();
+        if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
         window.addEventListener("resize", setProperties);
         document.body.append(div);
         this.resizeEventListeners.push(setProperties);

@@ -1,6 +1,6 @@
 {
   "name": "zois-core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "The core for the my mods, which contains a shared code reused in all my mods",
   "scripts": {
     "build": "node scripts/build.mjs"
@@ -11,7 +11,28 @@
   "files": [
     "dist"
   ],
-  "type": "commonjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./messaging": {
+      "import": "./dist/messaging.js",
+      "types": "./dist/messaging.d.ts"
+    },
+    "./modsApi": {
+      "import": "./dist/modsApi.js",
+      "types": "./dist/modsApi.d.ts"
+    },
+    "./ui": {
+      "import": "./dist/ui.js",
+      "types": "./dist/ui.d.ts"
+    },
+    "./wardrobe": {
+      "import": "./dist/wardrobe.js",
+      "types": "./dist/wardrobe.d.ts"
+    }
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
