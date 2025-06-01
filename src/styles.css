@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Emilys+Candy&display=swap');
-
 * {
     margin: 0;
     padding: 0;
@@ -9,7 +7,6 @@
 .zcButton {
     cursor: pointer;
     background: var(--tmd-element, white);
-    font-family: "Emilys Candy";
     color: var(--tmd-text, black);
     border: 2px solid var(--tmd-accent, black);
     border-radius: 4px;
@@ -19,6 +16,32 @@
     background: var(--tmd-element-hover, #ebf7fe);
     border-color: var(--tmd-accent-hover, #7dd3fc);
     color: var(--tmd-accent-hover, #015a8c);
+}
+
+.zcButton .tooltip {
+    position: absolute;
+    color: black;
+    text-align: center;
+    padding: 4px;
+    border-radius: 4px;
+    background: #FFFF88;
+    border: 2px solid #e7e787;
+    width: max-content;
+    min-height: 100%;
+    visibility: hidden;
+    z-index: 10;
+}
+
+.zcButton .tooltip[position=left] {
+    right: calc(100% + 1vw);
+}
+
+.zcButton .tooltip[position=right] {
+    left: calc(100% + 1vw);
+}
+
+.zcButton:hover .tooltip {
+    visibility: visible;
 }
 
 .zcButton[data-zc-style="green"] {
@@ -44,7 +67,6 @@
 
 .zcInput {
     background: var(--tmd-element, white);
-    font-family: Emilys Candy;
     color: var(--tmd-text, black);
     padding: 2vw;
     border: 2px solid var(--tmd-accent, black);
@@ -61,7 +83,6 @@
     justify-content: center;
     align-items: center;
     background: var(--tmd-element, white);
-    font-family: Emilys Candy;
     color: var(--tmd-text, black);
     border: 2px solid var(--tmd-accent, black);
     border-radius: 4px;

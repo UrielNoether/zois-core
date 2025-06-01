@@ -1,12 +1,13 @@
 import { getRandomNumber, MOD_DATA } from "./index";
 
 const pendingRequests: Map<number, PendingRequest<any>> = new Map();
+const requestListeners: Map<string, (data: any, sender: Character) => any> = new Map();
 
 interface PendingRequest<T> {
 	message: string
 	data: T
-	target: number,
-	resolve: (data: T) => any,
+	target: number
+	resolve: (data: T) => any
 	reject: (data: T) => any
 }
 
@@ -14,6 +15,14 @@ interface RequestResponse<T> {
 	data?: T
 	isError: boolean
 }
+
+interface RequestMessageData {
+	requestId: number
+	message: string
+	data: any
+}
+
+type RequestResponseMessageData = RequestMessageData;
 
 export function chatSendLocal(message: string | Node): void {
 	if (!ServerPlayerIsInChatRoom()) return;
@@ -92,29 +101,29 @@ export function chatSendBeep(data: any, targetId: number): void {
 	ServerSend("AccountBeep", beep);
 }
 
-// export function sendRequest<T>(message: string, data: any, target: number): Promise<RequestResponse<T>> {
-// 	return new Promise((resolve, reject) => {
-// 		const requestId = parseInt(`${Date.now()}${getRandomNumber(1000, 10000)}`);
-// 		pendingRequests.set(requestId, {
-// 			message,
-// 			data,
-// 			target,
-// 			resolve,
-// 			reject
-// 		});
-// 		chatSendModMessage<RequestMessageData>("request", {
-// 			requestId,
-// 			message,
-// 			data
-// 		}, target);
-// 		setTimeout(() => {
-// 			pendingRequests.delete(requestId);
-// 			resolve({
-// 				isError: true
-// 			});
-// 		}, 6000);
-// 	});
-// }
+export function sendRequest<T>(message: string, data: any, target: number): Promise<RequestResponse<T>> {
+	return new Promise((resolve, reject) => {
+		const requestId = parseInt(`${Date.now()}${getRandomNumber(1000, 10000)}`);
+		pendingRequests.set(requestId, {
+			message,
+			data,
+			target,
+			resolve,
+			reject
+		});
+		chatSendModMessage<RequestMessageData>("request", {
+			requestId,
+			message,
+			data
+		}, target);
+		setTimeout(() => {
+			pendingRequests.delete(requestId);
+			resolve({
+				isError: true
+			});
+		}, 6000);
+	});
+}
 
 export function handleRequestResponse(requestId: number, data: any): void {
 	const request = pendingRequests.get(requestId);
@@ -124,15 +133,19 @@ export function handleRequestResponse(requestId: number, data: any): void {
 	});
 }
 
-// export function handleRequest(requestId: number, message: string, data: any, sender: Character): void {
-// 	switch (message) {
-// 		case "getLogs":
-// 			if (!hasAccessRightTo(sender, Player, AccessRight.READ_LOGS)) return;
-// 			chatSendModMessage<RequestResponseMessageData>("requestResponse", {
-// 				requestId,
-// 				message,
-// 				data: modStorage.logs?.list ?? []
-// 			}, sender.MemberNumber);
-// 			return;
-// 	}
-// }
+export function handleRequest(requestId: number, message: string, _data: any, sender: Character): void {
+	const listener = requestListeners.get(message);
+	if (!listener) return;
+	const data = listener(_data, sender);
+	if (data !== undefined) {
+		chatSendModMessage<RequestResponseMessageData>("requestResponse", {
+			requestId,
+			message,
+			data
+		}, sender.MemberNumber);
+	}
+}
+
+export function addRequestListener(message: string, listener: (data: any, sender: Character) => any): void {
+	requestListeners.set(message, listener);
+}

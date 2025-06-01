@@ -10,6 +10,7 @@ interface ModData {
     repository?: string
     chatMessageBackground?: string
     chatMessageColor?: string
+    fontFamily?: string 
 }
 
 export let MOD_DATA: ModData;

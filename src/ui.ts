@@ -1,3 +1,5 @@
+import { MOD_DATA } from "./index";
+
 type Anchor = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 interface CreateButtonArgs {
@@ -14,6 +16,10 @@ interface CreateButtonArgs {
     icon?: string
     iconAbsolutePosition?: boolean
     iconWidth?: string
+    tooltip?: {
+        text: string
+        position: "left" | "right"
+    }
     onClick?: () => void
     isDisabled?: () => boolean
 }
@@ -163,6 +169,10 @@ function setFontSize(element: HTMLElement, targetFontSize: number) {
     });
 }
 
+function setFontFamily(element: HTMLElement, fontFamily?: string) {
+    element.style.fontFamily = fontFamily ?? "sans-serif";
+}
+
 function setPadding(element: HTMLElement, targetPadding: number) {
     const canvasWidth = MainCanvas.canvas.clientWidth;
     const canvasHeight = MainCanvas.canvas.clientHeight;
@@ -257,7 +267,7 @@ export abstract class BaseSubscreen {
         text, x, y, width, height, fontSize = "auto",
         anchor = "top-left", padding, style = "default",
         place = true, icon, iconAbsolutePosition = true,
-        iconWidth, onClick, isDisabled
+        iconWidth, tooltip, onClick, isDisabled
     }: CreateButtonArgs): HTMLButtonElement {
         const btn = document.createElement("button");
         btn.classList.add("zcButton");
@@ -266,6 +276,7 @@ export abstract class BaseSubscreen {
         btn.style.alignItems = "center";
         btn.style.justifyContent = "center";
         btn.style.columnGap = "1.25vw";
+        setFontFamily(btn, MOD_DATA.fontFamily);
 
         if (icon) {
             const img = document.createElement("img");
@@ -290,6 +301,14 @@ export abstract class BaseSubscreen {
             btn.append(span);
         }
 
+        if (tooltip) {
+            const tooltipEl = document.createElement("span");
+            tooltipEl.classList.add("tooltip");
+            tooltipEl.setAttribute("position", tooltip.position);
+            tooltipEl.textContent = tooltip.text;
+            btn.append(tooltipEl);
+        }
+
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(btn, x, y, anchor);
             setSize(btn, width, height);
@@ -304,7 +323,7 @@ export abstract class BaseSubscreen {
             if (typeof isDisabled === "function" && !isDisabled() && typeof onClick === "function") {
                 onClick();
             }
-            if (isDisabled() && !btn.classList.contains("zcDisabled")) btn.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) btn.classList.add("zcDisabled");
         });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(btn);
@@ -321,7 +340,7 @@ export abstract class BaseSubscreen {
         p.innerHTML = text;
         p.style.color = color ?? "var(--tmd-text, black)";
         if (withBackground) p.style.background = "var(--tmd-element,rgb(239, 239, 239))";
-        p.style.fontFamily = "Emilys Candy";
+        setFontFamily(p);
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(p, x, y, anchor);
@@ -348,6 +367,7 @@ export abstract class BaseSubscreen {
         input.classList.add("zcInput");
         if (placeholder) input.placeholder = placeholder;
         if (value) input.value = value;
+        setFontFamily(input, MOD_DATA.fontFamily);
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(input, x, y, anchor);
@@ -363,13 +383,13 @@ export abstract class BaseSubscreen {
             if (typeof isDisabled === "function" && !isDisabled() && typeof onChange === "function") {
                 onChange();
             }
-            if (isDisabled() && !input.classList.contains("zcDisabled")) input.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
         });
         input.addEventListener("input", () => {
             if (typeof isDisabled === "function" && !isDisabled() && typeof onInput === "function") {
                 onInput();
             }
-            if (isDisabled() && !input.classList.contains("zcDisabled")) input.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
         });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(input);
@@ -391,7 +411,7 @@ export abstract class BaseSubscreen {
         const p = document.createElement("p");
         p.textContent = text;
         p.style.color = "var(--tmd-text, black)";
-        p.style.fontFamily = "Emilys Candy";
+        setFontFamily(p);
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(checkbox, x, y, anchor);
@@ -407,7 +427,7 @@ export abstract class BaseSubscreen {
             if (typeof isDisabled === "function" && !isDisabled() && typeof onChange === "function") {
                 onChange();
             }
-            if (isDisabled() && !checkbox.classList.contains("zcDisabled")) checkbox.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) checkbox.classList.add("zcDisabled");
         });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(checkbox, p);
@@ -447,8 +467,10 @@ export abstract class BaseSubscreen {
         const div = document.createElement("div");
         div.style.cssText = `
         display: flex; flex-direction: column; gap: 1vw; border: 2px solid var(--tmd-accent, black);
-        font-family: Emilys Candy; border-radius: 4px; padding: 0.75vw;
+        border-radius: 4px; padding: 0.75vw;
         `;
+        setFontFamily(div, MOD_DATA.fontFamily);
+
 
         const buttonsElement = document.createElement("div");
         buttonsElement.style.cssText = "display: flex; justify-content: center; column-gap: 1vw; width: 100%;";
@@ -475,7 +497,10 @@ export abstract class BaseSubscreen {
         }
 
         const addItem = (text: string) => {
-            if (isDisabled() && !input.classList.contains("zcDisabled")) return input.classList.add("zcDisabled");
+            if (
+                typeof isDisabled === "function" &&
+                isDisabled()
+            ) return div.classList.add("zcDisabled");
             const item = document.createElement("div");
             item.style.cssText = "cursor: pointer; background: var(--tmd-element-hover, rgb(206, 206, 206)); color: var(--tmd-text, black); height: fit-content; padding: 0.8vw; border-radius: 0.8vw; font-size: clamp(8px, 2vw, 20px);";
             item.textContent = text;
@@ -495,14 +520,14 @@ export abstract class BaseSubscreen {
         }
 
         addButton("Icons/Cancel.png", () => {
-            if (isDisabled() && !input.classList.contains("zcDisabled")) return input.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
             itemsElement.innerHTML = "";
             items.splice(0, items.length);
             itemsElement.append(input);
             value.forEach((v) => addItem(String(v)));
         });
         addButton("Icons/Trash.png", () => {
-            if (isDisabled() && !input.classList.contains("zcDisabled")) return input.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
             for (const c of [...itemsElement.children]) {
                 if (c.getAttribute("style").includes("border: 2px solid red;")) {
                     items.splice(items.indexOf(c.textContent), 1);
@@ -561,6 +586,7 @@ export abstract class BaseSubscreen {
     }: CreateBackNextButtonArgs): HTMLDivElement {
         const div = document.createElement("div");
         div.classList.add("zcBackNextButton");
+        setFontFamily(div, MOD_DATA.fontFamily);
 
         const backBtn = document.createElement("button");
         backBtn.style.cssText = "position: absolute; left: 1vw; font-size: 3.5vw; aspect-ratio: 1/1; height: 140%;";
