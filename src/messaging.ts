@@ -24,7 +24,7 @@ interface RequestMessageData {
 
 type RequestResponseMessageData = RequestMessageData;
 
-export function chatSendLocal(message: string | Node): void {
+export function chatSendLocalMessage(message: string | Node): void {
 	if (!ServerPlayerIsInChatRoom()) return;
 
 	const div = document.createElement("div");
@@ -87,7 +87,7 @@ export function chatSendModMessage<T>(msg: string, _data: T = null, targetNumber
 	ServerSend("ChatRoomChat", data);
 }
 
-export function chatSendBeep(data: any, targetId: number): void {
+export function chatSendBeepMessage(data: any, targetId: number): void {
 	const beep = {
 		IsSecret: true,
 		BeepType: "Leash",

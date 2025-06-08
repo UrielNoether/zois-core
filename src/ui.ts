@@ -107,6 +107,7 @@ interface CreateBackNextButtonArgs {
     height: number
     items: [string, any?][]
     currentIndex: number
+    isBold?: boolean 
     anchor?: Anchor
     onChange?: (value: any) => void
     isDisabled?: () => boolean
@@ -340,7 +341,7 @@ export abstract class BaseSubscreen {
         p.innerHTML = text;
         p.style.color = color ?? "var(--tmd-text, black)";
         if (withBackground) p.style.background = "var(--tmd-element,rgb(239, 239, 239))";
-        setFontFamily(p);
+        setFontFamily(p, MOD_DATA.fontFamily);
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(p, x, y, anchor);
@@ -380,16 +381,12 @@ export abstract class BaseSubscreen {
         setProperties();
         if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
         input.addEventListener("change", () => {
-            if (typeof isDisabled === "function" && !isDisabled() && typeof onChange === "function") {
-                onChange();
-            }
-            if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) return input.classList.add("zcDisabled");
+            if (typeof onChange === "function") onChange();
         });
         input.addEventListener("input", () => {
-            if (typeof isDisabled === "function" && !isDisabled() && typeof onInput === "function") {
-                onInput();
-            }
-            if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) return input.classList.add("zcDisabled");
+            if (typeof onInput === "function") onInput();
         });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(input);
@@ -411,7 +408,7 @@ export abstract class BaseSubscreen {
         const p = document.createElement("p");
         p.textContent = text;
         p.style.color = "var(--tmd-text, black)";
-        setFontFamily(p);
+        setFontFamily(p, MOD_DATA.fontFamily);
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(checkbox, x, y, anchor);
@@ -424,10 +421,8 @@ export abstract class BaseSubscreen {
         setProperties();
         if (typeof isDisabled === "function" && isDisabled()) checkbox.classList.add("zcDisabled");
         checkbox.addEventListener("change", () => {
-            if (typeof isDisabled === "function" && !isDisabled() && typeof onChange === "function") {
-                onChange();
-            }
-            if (typeof isDisabled === "function" && isDisabled()) checkbox.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) return checkbox.classList.add("zcDisabled");
+            if (typeof onChange === "function") onChange();
         });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(checkbox, p);
@@ -582,7 +577,7 @@ export abstract class BaseSubscreen {
 
     createBackNextButton({
         x, y, width, height, items, currentIndex,
-        onChange, isDisabled
+        isBold = false, onChange, isDisabled
     }: CreateBackNextButtonArgs): HTMLDivElement {
         const div = document.createElement("div");
         div.classList.add("zcBackNextButton");
@@ -613,6 +608,7 @@ export abstract class BaseSubscreen {
         });
 
         const text = document.createElement("p");
+        if (isBold) text.style.fontWeight = "bold";
         text.textContent = items[currentIndex][0];
 
         div.append(backBtn, text, nextBtn);
