@@ -26,7 +26,7 @@ interface CreateButtonArgs {
 
 interface CreateTextArgs {
     text?: string
-    color?: "string"
+    color?: string
     x?: number
     y?: number
     fontSize?: number | "auto"
@@ -107,10 +107,22 @@ interface CreateBackNextButtonArgs {
     height: number
     items: [string, any?][]
     currentIndex: number
-    isBold?: boolean 
+    isBold?: boolean
     anchor?: Anchor
     onChange?: (value: any) => void
     isDisabled?: () => boolean
+}
+
+interface CreateTabArgs {
+    x: number
+    y: number
+    width: number
+    tabs: {
+        name: string
+        load: () => void
+    }[]
+    currentTabName: string
+    anchor?: Anchor
 }
 
 function getRelativeHeight(height: number) {
@@ -203,6 +215,14 @@ function loadSubscreen(subscreen: BaseSubscreen): void {
         height: 90,
         icon: "Icons/Exit.png"
     }).addEventListener("click", () => subscreen.exit());
+    if (subscreen.name) {
+        subscreen.createText({
+            text: subscreen.name,
+            x: 100,
+            y: 60,
+            fontSize: 10
+        });
+    }
     subscreen.load();
     if (subscreenHooks[subscreen.name]) {
         subscreenHooks[subscreen.name].forEach((hook) => hook(subscreen));
@@ -399,11 +419,17 @@ export abstract class BaseSubscreen {
         text, x, y, isChecked, width,
         anchor = "top-left", place = true,
         isDisabled, onChange
-    }: CreateCheckboxArgs): HTMLInputElement {
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox"
-        checkbox.checked = isChecked;
-        checkbox.classList.add("zcCheckbox", "checkbox");
+    }: CreateCheckboxArgs): HTMLDivElement {
+        const checkbox = document.createElement("div");
+        checkbox.style.display = "flex";
+        checkbox.style.alignItems = "center";
+        checkbox.style.columnGap = "1vw";
+        
+        const input = document.createElement("input");
+        input.type = "checkbox"
+        input.checked = isChecked;
+        input.style.borderRadius = "min(0.8dvh, 0.3dvw)";
+        input.classList.add("zcCheckbox", "checkbox");
 
         const p = document.createElement("p");
         p.textContent = text;
@@ -412,9 +438,7 @@ export abstract class BaseSubscreen {
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(checkbox, x, y, anchor);
-            setPosition(p, x + 100, y, anchor);
-            setSize(checkbox, 65, 65);
-            if (width) setSize(p, width, null);
+            if (width) checkbox.style.width = getRelativeWidth(width) + "px";
             setFontSize(p, 5);
         }
 
@@ -425,7 +449,8 @@ export abstract class BaseSubscreen {
             if (typeof onChange === "function") onChange();
         });
         window.addEventListener("resize", setProperties);
-        if (place) document.body.append(checkbox, p);
+        checkbox.append(input, p);
+        if (place) document.body.append(checkbox);
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(checkbox, p);
         return checkbox;
@@ -626,6 +651,54 @@ export abstract class BaseSubscreen {
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(div);
         return div;
+    }
+
+    createTabs({
+        x, y, width, tabs, anchor = "top-left", currentTabName
+    }: CreateTabArgs): HTMLDivElement {
+        let tabElements: (Node | string)[] = [];
+
+        const tabsEl = document.createElement("div");
+        tabsEl.classList.add("zcTabs");
+        setFontFamily(tabsEl, MOD_DATA.fontFamily);
+
+        tabs.forEach((tab) => {
+            const switchTab = () => {
+                for (const c of tabsEl.children) {
+                    c.removeAttribute("data-opened");
+                }
+                for (const c of tabElements) {
+                    if (c instanceof Node) document.body.removeChild(c);
+                }
+                tabElements = [];
+                tabEl.setAttribute("data-opened", "true");
+                const originalAppend = document.body.append.bind(document.body);
+                document.body.append = (...nodes: (Node | string)[]) => {
+                    tabElements.push(...nodes);
+                    originalAppend(...nodes);
+                };
+                tab.load();
+                document.body.append = originalAppend;
+            };
+            const tabEl = document.createElement("button");
+            tabEl.textContent = tab.name;
+            if (tab.name === currentTabName) switchTab();
+            tabEl.addEventListener("click", switchTab);
+            tabsEl.append(tabEl);
+        });
+
+        const setProperties = () => {
+            if (typeof x === "number" && typeof y === "number") setPosition(tabsEl, x, y, anchor);
+            setSize(tabsEl, width, 80);
+            autosetFontSize(tabsEl);
+        }
+
+        setProperties();
+        window.addEventListener("resize", setProperties);
+        document.body.append(tabsEl);
+        this.resizeEventListeners.push(setProperties);
+        this.htmlElements.push(tabsEl);
+        return tabsEl;
     }
 }
 

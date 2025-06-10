@@ -88,6 +88,29 @@
     border-radius: 4px;
 }
 
+.zcTabs {
+    display: flex;
+}   
+
+.zcTabs button {
+    cursor: pointer;
+    width: 100%;
+    color: var(--tmd-text, black);
+    background: none;
+    border: none;
+    border-bottom: 2px solid var(--tmd-element, rgb(214, 214, 214));
+}
+
+.zcTabs button[data-opened=true] {
+    font-weight: bold;
+    border-bottom: 2px solid var(--tmd-accent, rgb(81, 81, 231)) !important;
+}
+
+.zcTabs button:hover {
+    background: var(--tmd-element, rgb(235, 235, 235));
+    border-bottom: 2px solid var(--tmd-element-hover, rgb(149, 149, 149));
+}
+
 .zcDisabled {
     pointer-events: none;
     opacity: 0.6;

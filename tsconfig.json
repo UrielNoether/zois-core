@@ -13,7 +13,7 @@
     "removeComments": true,
     "alwaysStrict": false,
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
+    "allowSyntheticDefaultImports": false,
     "noEmit": true,
     "baseUrl": "src",
     "outDir": "dist",

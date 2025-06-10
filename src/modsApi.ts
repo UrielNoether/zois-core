@@ -20,10 +20,12 @@ export function registerMod(): void {
         version: MOD_DATA.version,
         repository: MOD_DATA.repository
     });
+
     hookFunction("GameKeyDown", HookPriority.ADD_BEHAVIOR, (args, next) => {
         if (CommonKey.IsPressed(args[0], "Escape") && getCurrentSubscreen()) getCurrentSubscreen().exit();
         return next(args);
     });
+    
     hookFunction("ChatRoomMessage", HookPriority.ADD_BEHAVIOR, (args, next) => {
         const message = args[0];
         const sender = getPlayer(message.Sender);
