@@ -4,8 +4,8 @@ import React, { JSX, ReactNode, useState, useEffect, CSSProperties } from "react
 import ReactDOM from "react-dom/client";
 import { create } from "zustand";
 import errorWarningIcon from "./assets/errorWarningIcon.svg";
-import infoIcon from "@/assets/infoIcon.svg";
-import successIcon from "@/assets/successIcon.svg";
+import infoIcon from "./assets/infoIcon.svg";
+import successIcon from "./assets/successIcon.svg";
 
 
 interface ToastsStore {

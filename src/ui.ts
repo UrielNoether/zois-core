@@ -354,10 +354,8 @@ export abstract class BaseSubscreen {
         setProperties();
         if (typeof isDisabled === "function" && isDisabled()) btn.classList.add("zcDisabled");
         btn.addEventListener("click", () => {
-            if (typeof isDisabled === "function" && !isDisabled() && typeof onClick === "function") {
-                onClick();
-            }
-            if (typeof isDisabled === "function" && isDisabled()) btn.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) return btn.classList.add("zcDisabled");
+            if (typeof onClick === "function") onClick();
         });
         window.addEventListener("resize", setProperties);
         if (place) document.body.append(btn);
