@@ -1,13 +1,13 @@
 {
   "name": "zois-core",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "The core for the my mods, which contains a shared code reused in all my mods",
   "scripts": {
     "build": "node scripts/build.mjs"
   },
   "author": "Zoi",
   "license": "MIT",
-  "packageManager": "pnpm@10.6.5",
+  "packageManager": "pnpm@10.12.1",
   "files": [
     "dist"
   ],
@@ -31,6 +31,10 @@
     "./wardrobe": {
       "import": "./dist/wardrobe.js",
       "types": "./dist/wardrobe.d.ts"
+    },
+    "./popups": {
+      "import": "./dist/popups.js",
+      "types": "./dist/popups.d.ts"
     }
   },
   "pnpm": {
@@ -39,11 +43,16 @@
     ]
   },
   "dependencies": {
-    "bondage-club-mod-sdk": "^1.2.0"
+    "bondage-club-mod-sdk": "^1.2.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "bc-stubs": "116.0.0-Beta.1",
-    "esbuild": "^0.25.4",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "bc-stubs": "117.0.0-Beta.1",
+    "esbuild": "^0.25.5",
     "nodemon": "^3.1.10",
     "typescript": "^5.8.3"
   }

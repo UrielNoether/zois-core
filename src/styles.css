@@ -90,7 +90,7 @@
 
 .zcTabs {
     display: flex;
-}   
+}
 
 .zcTabs button {
     cursor: pointer;
@@ -99,6 +99,7 @@
     background: none;
     border: none;
     border-bottom: 2px solid var(--tmd-element, rgb(214, 214, 214));
+    padding: 0.25em;
 }
 
 .zcTabs button[data-opened=true] {
@@ -109,6 +110,124 @@
 .zcTabs button:hover {
     background: var(--tmd-element, rgb(235, 235, 235));
     border-bottom: 2px solid var(--tmd-element-hover, rgb(149, 149, 149));
+}
+
+.zcToastsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25vw;
+    cursor: pointer;
+    position: fixed;
+    z-index: 10;
+}
+
+.zcToast[data-zc-toast-type="info"] {
+    background: rgb(80, 80, 223);
+}
+
+.zcToast[data-zc-toast-type="success"] {
+    background: rgb(66 240 143);
+}
+
+.zcToast[data-zc-toast-type="warning"] {
+    background: #ffdb82;
+}
+
+.zcToast[data-zc-toast-type="error"] {
+    background: rgb(212, 46, 107);
+}
+
+@keyframes zcToast-progress {
+    0% {
+        width: 0;
+    }
+
+    100% {
+        width: 100%;
+    }
+}
+
+@keyframes zcSlideInFromLeft {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes zcSlideOutToLeft {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+}
+
+.zcToast {
+  animation: zcSlideInFromLeft 0.3s ease-out forwards;
+}
+
+.zcToast.exiting {
+  animation: zcSlideOutToLeft 0.3s ease-out forwards;
+}
+
+.zcToast[data-zc-toast-type="info"] .zcToast-ProgressBar {
+    background: rgb(103, 103, 234);
+}
+
+.zcToast[data-zc-toast-type="success"] .zcToast-ProgressBar {
+    background: rgb(47, 209, 120);
+}
+
+.zcToast[data-zc-toast-type="warning"] .zcToast-ProgressBar {
+    background: #e1bd62;
+
+}
+
+.zcToast[data-zc-toast-type="error"] .zcToast-ProgressBar {
+    background: rgb(183, 40, 92);
+}
+
+.zcToast p {
+    color: white;
+}
+
+dialog[data-zc-dialog-type="choice_multiple"] .zcDialogBtn::before {
+    content: "";
+    position: absolute;
+    left: 1vw;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 2px solid white;
+    width: 0.5em;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+}
+
+dialog[data-zc-dialog-type="choice_multiple"] .zcDialogBtn[data-zc-picked=true]::before {
+    background: white;
+}
+
+.zcDialogBtn {
+    cursor: pointer;
+    background: #ffffff17;
+    border: none;
+    font-size: clamp(6px, 2vw, 24px);
+    color: white;
+    padding: 0.2em;
+    border-radius: 0.5em;
+}
+
+.zcDialogBtn:hover {
+    background: #ffffff24;
 }
 
 .zcDisabled {

@@ -3,7 +3,9 @@
     "node_modules/bc-stubs/bc/**/*.d.ts",
     "**/*.js",
     "**/*.ts",
+    "**/*.tsx"
   ],
+  "react": ["./node_modules/@types/react"],
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
@@ -13,8 +15,10 @@
     "removeComments": true,
     "alwaysStrict": false,
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": false,
+    "allowSyntheticDefaultImports": true,
     "noEmit": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "baseUrl": "src",
     "outDir": "dist",
     "paths": {

@@ -1,4 +1,4 @@
-import { MOD_DATA } from "./index";
+import { getThemedColorsModule, MOD_DATA } from "./index";
 
 type Anchor = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -119,28 +119,40 @@ interface CreateTabArgs {
     width: number
     tabs: {
         name: string
-        load: () => void
+        load?: () => void
+        run?: () => void
     }[]
     currentTabName: string
     anchor?: Anchor
 }
 
-function getRelativeHeight(height: number) {
+interface DrawPolylineArrowArgs {
+    points: {
+        x: number
+        y: number
+    }[]
+    strokeColor?: string
+    lineWidth?: number
+    circleRadius?: number
+    circleColor?:string
+}
+
+export function getRelativeHeight(height: number) {
     return height * (MainCanvas.canvas.clientHeight / 1000);
 }
 
-function getRelativeWidth(width: number) {
+export function getRelativeWidth(width: number) {
     return width * (MainCanvas.canvas.clientWidth / 2000);
 }
 
-function getRelativeY(yPos: number, anchorPosition: 'top' | 'bottom' = 'top') {
+export function getRelativeY(yPos: number, anchorPosition: 'top' | 'bottom' = 'top') {
     const scaleY = MainCanvas.canvas.clientHeight / 1000;
     return anchorPosition === 'top'
         ? MainCanvas.canvas.offsetTop + yPos * scaleY
         : window.innerHeight - (MainCanvas.canvas.offsetTop + MainCanvas.canvas.clientHeight) + yPos * scaleY;
 }
 
-function getRelativeX(xPos: number, anchorPosition: 'left' | 'right' = 'left') {
+export function getRelativeX(xPos: number, anchorPosition: 'left' | 'right' = 'left') {
     const scaleX = MainCanvas.canvas.clientWidth / 2000;
     return anchorPosition === 'left'
         ? MainCanvas.canvas.offsetLeft + xPos * scaleX
@@ -148,7 +160,7 @@ function getRelativeX(xPos: number, anchorPosition: 'left' | 'right' = 'left') {
 }
 
 
-function setPosition(element: HTMLElement, xPos: number, yPos: number, anchor: Anchor = "top-left") {
+export function setPosition(element: HTMLElement, xPos: number, yPos: number, anchor: Anchor = "top-left") {
     const yAnchor = anchor === 'top-left' || anchor === 'top-right' ? 'top' : 'bottom';
     const xAnchor = anchor === 'top-left' || anchor === 'bottom-left' ? 'left' : 'right';
 
@@ -162,14 +174,14 @@ function setPosition(element: HTMLElement, xPos: number, yPos: number, anchor: A
     });
 }
 
-function setSize(element: HTMLElement, width: number, height: number) {
+export function setSize(element: HTMLElement, width: number, height: number) {
     Object.assign(element.style, {
         width: getRelativeWidth(width) + 'px',
         height: getRelativeHeight(height) + 'px',
     });
 }
 
-function setFontSize(element: HTMLElement, targetFontSize: number) {
+export function setFontSize(element: HTMLElement, targetFontSize: number) {
     const canvasWidth = MainCanvas.canvas.clientWidth;
     const canvasHeight = MainCanvas.canvas.clientHeight;
 
@@ -182,11 +194,11 @@ function setFontSize(element: HTMLElement, targetFontSize: number) {
     });
 }
 
-function setFontFamily(element: HTMLElement, fontFamily?: string) {
+export function setFontFamily(element: HTMLElement, fontFamily?: string) {
     element.style.fontFamily = fontFamily ?? "sans-serif";
 }
 
-function setPadding(element: HTMLElement, targetPadding: number) {
+export function setPadding(element: HTMLElement, targetPadding: number) {
     const canvasWidth = MainCanvas.canvas.clientWidth;
     const canvasHeight = MainCanvas.canvas.clientHeight;
 
@@ -199,7 +211,7 @@ function setPadding(element: HTMLElement, targetPadding: number) {
     });
 }
 
-function autosetFontSize(element: HTMLElement) {
+export function autosetFontSize(element: HTMLElement) {
     const Font = MainCanvas.canvas.clientWidth <= MainCanvas.canvas.clientHeight * 2 ? MainCanvas.canvas.clientWidth / 50 : MainCanvas.canvas.clientHeight / 25;
 
     Object.assign(element.style, {
@@ -207,7 +219,7 @@ function autosetFontSize(element: HTMLElement) {
     });
 }
 
-function loadSubscreen(subscreen: BaseSubscreen): void {
+export function loadSubscreen(subscreen: BaseSubscreen): void {
     subscreen.createButton({
         x: 1815,
         y: 75,
@@ -251,6 +263,7 @@ let previousSubscreen: BaseSubscreen | null = null;
 export abstract class BaseSubscreen {
     private htmlElements: HTMLElement[] = [];
     private resizeEventListeners: EventListener[] = [];
+    private tabRunHandler: () => void;
 
     get currentSubscreen(): BaseSubscreen | null {
         return currentSubscreen;
@@ -261,7 +274,7 @@ export abstract class BaseSubscreen {
     }
 
     run() {
-
+        if (this.tabRunHandler) this.tabRunHandler();
     }
     load?() { }
     unload?() {
@@ -424,7 +437,7 @@ export abstract class BaseSubscreen {
         checkbox.style.display = "flex";
         checkbox.style.alignItems = "center";
         checkbox.style.columnGap = "1vw";
-        
+
         const input = document.createElement("input");
         input.type = "checkbox"
         input.checked = isChecked;
@@ -487,7 +500,7 @@ export abstract class BaseSubscreen {
         const div = document.createElement("div");
         div.style.cssText = `
         display: flex; flex-direction: column; gap: 1vw; border: 2px solid var(--tmd-accent, black);
-        border-radius: 4px; padding: 0.75vw;
+        border-radius: 4px; padding: 0.75vw; background: var(--tmd-element, none);
         `;
         setFontFamily(div, MOD_DATA.fontFamily);
 
@@ -531,7 +544,7 @@ export abstract class BaseSubscreen {
                 e.stopPropagation();
             });
             items.push(text);
-            onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
+            if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         }
 
         const setProperties = () => {
@@ -678,6 +691,7 @@ export abstract class BaseSubscreen {
                     originalAppend(...nodes);
                 };
                 tab.load();
+                this.tabRunHandler = tab.run;
                 document.body.append = originalAppend;
             };
             const tabEl = document.createElement("button");
@@ -689,7 +703,7 @@ export abstract class BaseSubscreen {
 
         const setProperties = () => {
             if (typeof x === "number" && typeof y === "number") setPosition(tabsEl, x, y, anchor);
-            setSize(tabsEl, width, 80);
+            if (width) tabsEl.style.width = getRelativeWidth(width) + "px";
             autosetFontSize(tabsEl);
         }
 
@@ -700,9 +714,40 @@ export abstract class BaseSubscreen {
         this.htmlElements.push(tabsEl);
         return tabsEl;
     }
+
+    drawPolylineArrow({
+        points, strokeColor = getThemedColorsModule()?.base?.text ?? "black", lineWidth = 2,
+        circleRadius = 5, circleColor = getThemedColorsModule()?.base?.text ?? "black"
+    }: DrawPolylineArrowArgs): void {
+        if (points.length < 2) return;
+
+        const ctx = MainCanvas.canvas.getContext("2d");
+        ctx.save();
+
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+        ctx.fillStyle = circleColor;
+
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(points[0].x, points[0].y, circleRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(points[points.length - 1].x, points[points.length - 1].y, circleRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
 }
 
-let subscreenHooks: Record<string, ((subscreen: BaseSubscreen) => void)[]> = {};
+const subscreenHooks: Record<string, ((subscreen: BaseSubscreen) => void)[]> = {};
 
 export function hookSubscreen(subscreenName: string, hook: (subscreen: BaseSubscreen) => void) {
     if (!subscreenHooks[subscreenName]) subscreenHooks[subscreenName] = [];

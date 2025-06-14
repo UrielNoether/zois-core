@@ -1,5 +1,6 @@
 import styles from "./styles.css";
-import { registerMod } from "./modsApi";
+import { findModByName, registerMod } from "./modsApi";
+import { initVirtualDOM } from "./popups";
 
 
 interface ModData {
@@ -10,17 +11,18 @@ interface ModData {
     repository?: string
     chatMessageBackground?: string
     chatMessageColor?: string
-    fontFamily?: string 
+    fontFamily?: string
 }
 
 export let MOD_DATA: ModData;
 
 export function registerCore(modData: ModData): void {
-    if (!window.ZOISCORE_STYLES_LOADED) {
+    if (!window.ZOISCORE) {
         const style = document.createElement("style");
         style.innerHTML = styles;
         document.head.append(style);
-        window.ZOISCORE_STYLES_LOADED = true;
+        initVirtualDOM();
+        window.ZOISCORE = true;
     }
     MOD_DATA = { ...modData };
     registerMod();
@@ -82,17 +84,26 @@ export function getSizeInKbytes(b: any): number {
 }
 
 export function getPlayer(value: string | number): Character {
-	if (!value) return;
-	return ChatRoomCharacter.find((Character) => {
-		return (
-			Character.MemberNumber == value ||
-			Character.Name.toLowerCase() === value ||
-			Character.Nickname?.toLowerCase() === value
-		);
-	});
+    if (!value) return;
+    return ChatRoomCharacter.find((Character) => {
+        return (
+            Character.MemberNumber == value ||
+            Character.Name.toLowerCase() === value ||
+            Character.Nickname?.toLowerCase() === value
+        );
+    });
 }
 
 export function getNickname(target: Character): string {
-	return CharacterNickname(target);
+    return CharacterNickname(target);
 }
 
+export function getThemedColorsModule() {
+    if (!findModByName("Themed")) return null;
+    const themedData = JSON.parse(LZString.decompressFromBase64(Player.ExtensionSettings.Themed ?? ""));
+    if (
+        !themedData?.GlobalModule?.themedEnabled ||
+        !themedData?.GlobalModule?.doVanillaGuiOverhaul
+    ) return null;
+    return themedData.ColorsModule;
+}
