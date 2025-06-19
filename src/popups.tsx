@@ -3,47 +3,17 @@ import { MOD_DATA } from "./index";
 import React, { JSX, ReactNode, useState, useEffect, CSSProperties } from "react";
 import ReactDOM from "react-dom/client";
 import { create } from "zustand";
-import errorWarningIcon from "./assets/errorWarningIcon.svg";
+import warningIcon from "./assets/warningIcon.svg";
+import errorIcon from "./assets/errorIcon.svg";
 import infoIcon from "./assets/infoIcon.svg";
 import successIcon from "./assets/successIcon.svg";
-
-
-interface ToastsStore {
-    toasts: ToastProps[]
-    addToast: (toast: ToastProps) => void
-    removeToast: (id: string) => void
-    clearToasts: () => void
-}
-
-interface DialogStore {
-    dialog: DialogProps | null
-    setDialog: (props: DialogProps) => void
-    clearDialog: () => void
-}
-
-const useToastsStore = create<ToastsStore>((set) => ({
-    toasts: [],
-    addToast: (toast) => set((state) => ({ toasts: [...state.toasts, toast] })),
-    removeToast: (id) => {
-        return set((state) => ({
-            toasts: state.toasts.filter((toast) => toast.id !== id),
-        }));
-    },
-    clearToasts: () => set({ toasts: [] })
-}));
-
-const useDialogStore = create<DialogStore>((set) => ({
-    dialog: null,
-    setDialog: (props: DialogProps) => set({ dialog: props }),
-    clearDialog: () => set({ dialog: null })
-}));
 
 
 interface ToastProps {
     id: string
     title?: string
     message: string
-    type: "info" | "warning" | "error" | "success"
+    type: "info" | "warning" | "error" | "success" | "spinner"
     duration: number
 }
 
@@ -67,13 +37,13 @@ interface DialogProps {
 
 function ToastsContainer({ children }: { children: ReactNode }): JSX.Element {
     const [toastsContainerStyle, setToastsContainerStyle] = useState<React.CSSProperties>({});
-    const clearToasts = useToastsStore((state) => state.clearToasts);
+    const clearToasts = window.ZOISCORE.useToastsStore((state) => state.clearToasts);
 
     useEffect(() => {
         const update = () => {
             setToastsContainerStyle({
                 fontFamily: MOD_DATA.fontFamily ?? "sans-serif",
-                top: getRelativeY(5) + "px",
+                bottom: getRelativeY(5) + "px",
                 left: getRelativeX(5) + "px"
             });
         };
@@ -135,8 +105,12 @@ function Toast({
 
     return (
         <div className={`zcToast ${isExiting && "exiting"}`} data-zc-toast-type={type} style={toastStyle}>
-            <div style={{ display: "flex", gap: "1vw", position: "relative", zIndex: 5 }}>
-                <img src={type === "info" ? infoIcon : type === "success" ? successIcon : errorWarningIcon} style={{ width: "2vw", gap: "0.5em" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "1vw", position: "relative", zIndex: 5 }}>
+                {
+                    type === "spinner" ?
+                        <div className="zcSpinner" style={{ width: "2vw", height: "2vw" }} />
+                        : <img src={type === "info" ? infoIcon : type === "success" ? successIcon : type === "warning" ? warningIcon : errorIcon} style={{ width: "2vw" }} />
+                }
                 <div>
                     {
                         title && message &&
@@ -186,7 +160,7 @@ function Toast({
 }
 
 function Dialog({ dialog }: { dialog: DialogProps }): JSX.Element {
-    const clearDialog = useDialogStore((state) => state.clearDialog);
+    const clearDialog = window.ZOISCORE.useDialogStore((state) => state.clearDialog);
     const [dialogStyle, setDialogStyle] = useState<CSSProperties>({});
     const [pickedBtns, setPickedBtns] = useState([]);
 
@@ -293,14 +267,15 @@ function Dialog({ dialog }: { dialog: DialogProps }): JSX.Element {
         </dialog>
     );
 }
+
 class ToastsManager {
-    generateToastId(): string {
-        const { toasts } = useToastsStore.getState();
+    private generateToastId(): string {
+        const { toasts } = window.ZOISCORE.useToastsStore.getState();
         return `${Date.now()}:${toasts.length + 1}`;
     }
 
-    process({ title, message, duration, type, id }: ToastProps): void {
-        const { addToast, removeToast } = useToastsStore.getState();
+    private process({ title, message, duration, type, id }: ToastProps): void {
+        const { addToast, removeToast } = window.ZOISCORE.useToastsStore.getState();
         addToast({
             id,
             title,
@@ -330,11 +305,22 @@ class ToastsManager {
         const id = this.generateToastId();
         this.process({ title, message, duration, type: "error", id });
     }
+
+    spinner({ title, message }: Omit<ToastProps, "type" | "id" | "duration">): string {
+        const id = this.generateToastId();
+        this.process({ title, message, duration: 1000000, type: "spinner", id });
+        return id;
+    }
+
+    removeSpinner(id: string): void {
+        const { removeToast } = window.ZOISCORE.useToastsStore.getState();
+        removeToast(id);
+    }
 }
 
 class DialogsManager {
     showDialog({ type, title, body, buttons, width }: Omit<DialogProps, "promise">): Promise<unknown> {
-        const { setDialog } = useDialogStore.getState();
+        const { setDialog } = window.ZOISCORE.useDialogStore.getState();
         return new Promise((resolve, reject) => {
             setDialog({
                 width, type, title, body, buttons, promise: { resolve, reject }
@@ -344,8 +330,8 @@ class DialogsManager {
 }
 
 function App(): JSX.Element {
-    const toasts = useToastsStore((state) => state.toasts);
-    const dialog = useDialogStore((state) => state.dialog);
+    const toasts = window.ZOISCORE.useToastsStore((state) => state.toasts);
+    const dialog = window.ZOISCORE.useDialogStore((state) => state.dialog);
 
     return (
         <>
@@ -368,6 +354,36 @@ class VirtualDOM extends HTMLElement {
         ServerShowBeep("VirtualDOM was removed, chaos is coming...", 4000);
     }
 }
+
+export interface ToastsStore {
+    toasts: ToastProps[]
+    addToast: (toast: ToastProps) => void
+    removeToast: (id: string) => void
+    clearToasts: () => void
+}
+
+export interface DialogStore {
+    dialog: DialogProps | null
+    setDialog: (props: DialogProps) => void
+    clearDialog: () => void
+}
+
+export const useToastsStore = create<ToastsStore>((set) => ({
+    toasts: [],
+    addToast: (toast) => set((state) => ({ toasts: [...state.toasts, toast] })),
+    removeToast: (id) => {
+        return set((state) => ({
+            toasts: state.toasts.filter((toast) => toast.id !== id),
+        }));
+    },
+    clearToasts: () => set({ toasts: [] })
+}));
+
+export const useDialogStore = create<DialogStore>((set) => ({
+    dialog: null,
+    setDialog: (props: DialogProps) => set({ dialog: props }),
+    clearDialog: () => set({ dialog: null })
+}));
 
 export function initVirtualDOM(): void {
     customElements.define("zc-virtual-dom", VirtualDOM);

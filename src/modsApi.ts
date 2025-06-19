@@ -1,7 +1,7 @@
 import bcModSdk, { PatchHook, ModSDKModInfo, GetDotedPathType, ModSDKModAPI } from "bondage-club-mod-sdk";
 import { getPlayer, MOD_DATA } from "./index";
 import { getCurrentSubscreen } from "./ui";
-import { handleRequest, handleRequestResponse } from "./messaging";
+import { handleBeepRequest, handleBeepRequestResponse, handlePacketRequest, handlePacketRequestResponse } from "./messaging";
 
 export enum HookPriority {
     OBSERVE = 0,
@@ -34,13 +34,36 @@ export function registerMod(): void {
             const msg = message.Dictionary.msg;
             const data = message.Dictionary.data;
             if (msg === "request") {
-                if (typeof data.requestId !== "number" || typeof data.message !== "string") return;
-                handleRequest(data.requestId, data.message, data.data, sender);
+                if (typeof data.requestId !== "string" || typeof data.message !== "string") return;
+                handlePacketRequest(data.requestId, data.message, data.data, sender);
             }
             if (msg === "requestResponse") {
-                if (typeof data.requestId !== "number") return;
-                handleRequestResponse(data.requestId, data.data);
+                if (typeof data.requestId !== "string") return;
+                handlePacketRequestResponse(data.requestId, data.data);
             }
+        }
+        return next(args);
+    });
+
+    hookFunction("ServerAccountBeep", HookPriority.ADD_BEHAVIOR, (args, next) => {
+        const beep: ServerAccountBeepResponse = args[0];
+        if (beep.BeepType !== "Leash") return next(args);
+
+        let data: any;
+
+        try {
+            data = JSON.parse(beep.Message);
+        } catch {
+            return next(args);
+        }
+
+        if (data.type === `${MOD_DATA.key}_request`) {
+            if (typeof data.requestId !== "string" || typeof data.message !== "string") return;
+            handleBeepRequest(data.requestId, data.message, data.data, beep.MemberNumber);
+        }
+        if (data.type === `${MOD_DATA.key}_requestResponse`) {
+            if (typeof data.requestId !== "string") return;
+            handleBeepRequestResponse(data.requestId, data.data);
         }
         return next(args);
     });

@@ -98,6 +98,7 @@ interface CreateImageArgs {
     y: number
     width: number
     anchor?: Anchor
+    place?: boolean
 }
 
 interface CreateBackNextButtonArgs {
@@ -109,8 +110,9 @@ interface CreateBackNextButtonArgs {
     currentIndex: number
     isBold?: boolean
     anchor?: Anchor
+    place?: boolean
     onChange?: (value: any) => void
-    isDisabled?: () => boolean
+    isDisabled?: (value: any) => boolean
 }
 
 interface CreateTabArgs {
@@ -120,7 +122,9 @@ interface CreateTabArgs {
     tabs: {
         name: string
         load?: () => void
+        unload?: () => void
         run?: () => void
+        exit?: () => void
     }[]
     currentTabName: string
     anchor?: Anchor
@@ -134,7 +138,7 @@ interface DrawPolylineArrowArgs {
     strokeColor?: string
     lineWidth?: number
     circleRadius?: number
-    circleColor?:string
+    circleColor?: string
 }
 
 export function getRelativeHeight(height: number) {
@@ -219,28 +223,6 @@ export function autosetFontSize(element: HTMLElement) {
     });
 }
 
-export function loadSubscreen(subscreen: BaseSubscreen): void {
-    subscreen.createButton({
-        x: 1815,
-        y: 75,
-        width: 90,
-        height: 90,
-        icon: "Icons/Exit.png"
-    }).addEventListener("click", () => subscreen.exit());
-    if (subscreen.name) {
-        subscreen.createText({
-            text: subscreen.name,
-            x: 100,
-            y: 60,
-            fontSize: 10
-        });
-    }
-    subscreen.load();
-    if (subscreenHooks[subscreen.name]) {
-        subscreenHooks[subscreen.name].forEach((hook) => hook(subscreen));
-    }
-}
-
 export function setPreviousSubscreen(): void {
     setSubscreen(previousSubscreen);
 }
@@ -248,7 +230,7 @@ export function setPreviousSubscreen(): void {
 export function setSubscreen(subscreen: BaseSubscreen | null): void {
     previousSubscreen = currentSubscreen;
     currentSubscreen = subscreen;
-    if (currentSubscreen) loadSubscreen(currentSubscreen);
+    if (currentSubscreen) currentSubscreen.load();
     if (previousSubscreen) previousSubscreen.unload();
 }
 
@@ -263,21 +245,45 @@ let previousSubscreen: BaseSubscreen | null = null;
 export abstract class BaseSubscreen {
     private htmlElements: HTMLElement[] = [];
     private resizeEventListeners: EventListener[] = [];
-    private tabRunHandler: () => void;
+    private tabHandlers: Omit<CreateTabArgs["tabs"][0], "name"> = {};
 
     get currentSubscreen(): BaseSubscreen | null {
         return currentSubscreen;
+    }
+
+    get previousSubscreen(): BaseSubscreen | null {
+        return previousSubscreen;
     }
 
     get name(): string {
         return "";
     }
 
-    run() {
-        if (this.tabRunHandler) this.tabRunHandler();
+    run?() {
+        this.tabHandlers.run?.();
     }
-    load?() { }
+    load?() {
+        this.createButton({
+            x: 1815,
+            y: 75,
+            width: 90,
+            height: 90,
+            icon: "Icons/Exit.png"
+        }).addEventListener("click", () => this.exit());
+        if (this.name) {
+            this.createText({
+                text: this.name,
+                x: 100,
+                y: 60,
+                fontSize: 10
+            });
+        }
+        if (subscreenHooks[this.name]) {
+            subscreenHooks[this.name].forEach((hook) => hook(this));
+        }
+    }
     unload?() {
+        this.tabHandlers.unload?.();
         this.htmlElements.forEach((e) => {
             e.remove();
         });
@@ -287,7 +293,8 @@ export abstract class BaseSubscreen {
     }
     click?() { }
     exit?() {
-        setPreviousSubscreen();
+        this.tabHandlers.exit?.();
+        this.setSubscreen(this.previousSubscreen);
     }
     update?() { }
     setPreviousSubscreen() {
@@ -502,7 +509,6 @@ export abstract class BaseSubscreen {
         `;
         setFontFamily(div, MOD_DATA.fontFamily);
 
-
         const buttonsElement = document.createElement("div");
         buttonsElement.style.cssText = "display: flex; justify-content: center; column-gap: 1vw; width: 100%;";
 
@@ -528,10 +534,6 @@ export abstract class BaseSubscreen {
         }
 
         const addItem = (text: string) => {
-            if (
-                typeof isDisabled === "function" &&
-                isDisabled()
-            ) return div.classList.add("zcDisabled");
             const item = document.createElement("div");
             item.style.cssText = "cursor: pointer; background: var(--tmd-element-hover, rgb(206, 206, 206)); color: var(--tmd-text, black); height: fit-content; padding: 0.8vw; border-radius: 0.8vw; font-size: clamp(8px, 2vw, 20px);";
             item.textContent = text;
@@ -542,7 +544,6 @@ export abstract class BaseSubscreen {
                 e.stopPropagation();
             });
             items.push(text);
-            if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         }
 
         const setProperties = () => {
@@ -556,15 +557,17 @@ export abstract class BaseSubscreen {
             items.splice(0, items.length);
             itemsElement.append(input);
             value.forEach((v) => addItem(String(v)));
+            if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         });
         addButton("Icons/Trash.png", () => {
-            if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
             for (const c of [...itemsElement.children]) {
                 if (c.getAttribute("style").includes("border: 2px solid red;")) {
                     items.splice(items.indexOf(c.textContent), 1);
                     c.remove();
                 }
             }
+            if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         });
         setProperties();
         if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
@@ -574,9 +577,14 @@ export abstract class BaseSubscreen {
                 switch (e.key) {
                     case "Enter":
                         if (numbersOnly && Number.isNaN(parseInt(input.value))) return;
-                        if (!numbersOnly && input.value.trim() === "") return;
+                        if (input.value.trim() === "") return;
+                        if (
+                            typeof isDisabled === "function" &&
+                            isDisabled()
+                        ) return div.classList.add("zcDisabled");
                         addItem(input.value);
                         input.value = "";
+                        if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
                         break;
                 }
             }
@@ -584,7 +592,7 @@ export abstract class BaseSubscreen {
         div.addEventListener("click", (e) => { if (e.currentTarget == div) input.focus() });
         itemsElement.append(input);
         div.append(buttonsElement, titleElement, itemsElement);
-        document.body.append(div);
+        if (place) document.body.append(div);
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(div);
         value.forEach((v) => addItem(String(v)));
@@ -592,20 +600,20 @@ export abstract class BaseSubscreen {
     }
 
     createImage({
-        x, y, width, src,
+        x, y, width, src, place = true, anchor = "top-left"
     }: CreateImageArgs): HTMLImageElement {
         const img = document.createElement("img");
         img.src = src;
 
         const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(img, x, y);
+            if (typeof x === "number" && typeof y === "number") setPosition(img, x, y, anchor);
             setSize(img, width, 0);
             img.style.height = "auto";
         }
 
         setProperties();
         window.addEventListener("resize", setProperties);
-        document.body.append(img);
+        if (place) document.body.append(img);
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(img);
         return img;
@@ -613,22 +621,41 @@ export abstract class BaseSubscreen {
 
     createBackNextButton({
         x, y, width, height, items, currentIndex,
-        isBold = false, onChange, isDisabled
+        isBold = false, anchor = "top-left", place = true,
+        onChange, isDisabled
     }: CreateBackNextButtonArgs): HTMLDivElement {
         const div = document.createElement("div");
         div.classList.add("zcBackNextButton");
         setFontFamily(div, MOD_DATA.fontFamily);
+
+        const updateClasses = () => {
+            if (
+                currentIndex === 0 ||
+                (
+                    typeof isDisabled === "function" && isDisabled(items[currentIndex - 1][1])
+                )
+            ) backBtn.classList.add("zcBackNextButton-btnDisabled");
+            else backBtn.classList.remove("zcBackNextButton-btnDisabled");
+            if (
+                currentIndex === items.length - 1 ||
+                (
+                    typeof isDisabled === "function" && isDisabled(items[currentIndex + 1][1])
+                )
+            ) nextBtn.classList.add("zcBackNextButton-btnDisabled");
+            else nextBtn.classList.remove("zcBackNextButton-btnDisabled");
+        }
 
         const backBtn = document.createElement("button");
         backBtn.style.cssText = "position: absolute; left: 1vw; font-size: 3.5vw; aspect-ratio: 1/1; height: 140%;";
         backBtn.classList.add("zcButton");
         backBtn.textContent = "🡄";
         backBtn.addEventListener("click", () => {
-            if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
-            if (currentIndex === 0) return;
+            if (currentIndex === 0) return backBtn.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled(items[currentIndex - 1][1])) return backBtn.classList.add("zcDisabled");
             currentIndex--;
             text.textContent = items[currentIndex][0];
             if (typeof onChange === "function") onChange(items[currentIndex][1]);
+            updateClasses();
         });
 
         const nextBtn = document.createElement("button");
@@ -636,12 +663,15 @@ export abstract class BaseSubscreen {
         nextBtn.classList.add("zcButton");
         nextBtn.textContent = "🡆";
         nextBtn.addEventListener("click", () => {
-            if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
-            if (currentIndex === items.length - 1) return;
+            if (currentIndex === items.length - 1) return nextBtn.classList.add("zcDisabled");
+            if (typeof isDisabled === "function" && isDisabled(items[currentIndex + 1][1])) return nextBtn.classList.add("zcDisabled");
             currentIndex++;
             text.textContent = items[currentIndex][0];
             if (typeof onChange === "function") onChange(items[currentIndex][1]);
+            updateClasses();
         });
+
+        updateClasses();
 
         const text = document.createElement("p");
         if (isBold) text.style.fontWeight = "bold";
@@ -650,15 +680,14 @@ export abstract class BaseSubscreen {
         div.append(backBtn, text, nextBtn);
 
         const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y);
+            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y, anchor);
             setSize(div, width, height);
             autosetFontSize(text);
         }
 
         setProperties();
-        if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
         window.addEventListener("resize", setProperties);
-        document.body.append(div);
+        if (place) document.body.append(div);
         this.resizeEventListeners.push(setProperties);
         this.htmlElements.push(div);
         return div;
@@ -688,8 +717,15 @@ export abstract class BaseSubscreen {
                     tabElements.push(...nodes);
                     originalAppend(...nodes);
                 };
+                this.tabHandlers.unload?.();
+                this.tabHandlers.exit?.();
                 tab.load();
-                this.tabRunHandler = tab.run;
+                this.tabHandlers = {
+                    run: tab.run,
+                    load: tab.load,
+                    unload: tab.unload,
+                    exit: tab.exit
+                };
                 document.body.append = originalAppend;
             };
             const tabEl = document.createElement("button");

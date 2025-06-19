@@ -19,7 +19,8 @@
     "emitDeclarationOnly": true,
     "jsx": "react-jsx",
     "baseUrl": "src",
-    "outDir": "dist",
+    "rootDir": "src",
+    "outDir": "dist/types",
     "paths": {
       "@/*": [
         "*"

@@ -88,6 +88,11 @@
     border-radius: 4px;
 }
 
+.zcBackNextButton-btnDisabled {
+    background: #ffa590;
+    pointer-events: none;
+}
+
 .zcTabs {
     display: flex;
 }
@@ -121,7 +126,8 @@
     z-index: 10;
 }
 
-.zcToast[data-zc-toast-type="info"] {
+.zcToast[data-zc-toast-type="info"],
+.zcToast[data-zc-toast-type="spinner"] {
     background: rgb(80, 80, 223);
 }
 
@@ -172,11 +178,11 @@
 }
 
 .zcToast {
-  animation: zcSlideInFromLeft 0.3s ease-out forwards;
+    animation: zcSlideInFromLeft 0.3s ease-out forwards;
 }
 
 .zcToast.exiting {
-  animation: zcSlideOutToLeft 0.3s ease-out forwards;
+    animation: zcSlideOutToLeft 0.3s ease-out forwards;
 }
 
 .zcToast[data-zc-toast-type="info"] .zcToast-ProgressBar {
@@ -228,6 +234,25 @@ dialog[data-zc-dialog-type="choice_multiple"] .zcDialogBtn[data-zc-picked=true]:
 
 .zcDialogBtn:hover {
     background: #ffffff24;
+}
+
+@keyframes zcSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.zcSpinner {
+    box-sizing: border-box;
+    border: 2px solid;
+    border-radius: 100%;
+    border-color: #ffffff;
+    border-right-color: #5050df;
+    animation: zcSpin 0.65s linear infinite;
 }
 
 .zcDisabled {

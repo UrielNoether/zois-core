@@ -1,6 +1,6 @@
 import styles from "./styles.css";
 import { findModByName, registerMod } from "./modsApi";
-import { initVirtualDOM } from "./popups";
+import { initVirtualDOM, useToastsStore, useDialogStore } from "./popups";
 
 
 interface ModData {
@@ -14,6 +14,7 @@ interface ModData {
     fontFamily?: string
 }
 
+export { version } from "../package.json";
 export let MOD_DATA: ModData;
 
 export function registerCore(modData: ModData): void {
@@ -21,8 +22,12 @@ export function registerCore(modData: ModData): void {
         const style = document.createElement("style");
         style.innerHTML = styles;
         document.head.append(style);
+        window.ZOISCORE = Object.freeze({
+            loaded: true,
+            useToastsStore,
+            useDialogStore
+        });
         initVirtualDOM();
-        window.ZOISCORE = true;
     }
     MOD_DATA = { ...modData };
     registerMod();
@@ -37,7 +42,6 @@ export async function waitFor(func: () => boolean, cancelFunc = () => false): Pr
         if (cancelFunc()) {
             return false;
         }
-        // eslint-disable-next-line no-await-in-loop
         await sleep(10);
     }
     return true;
