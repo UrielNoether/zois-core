@@ -186,7 +186,7 @@ class MessagesManager {
 		div.style.color = MOD_DATA.chatMessageColor ?? "black";
 		div.style.margin = "0.15em 0";
 
-		if (typeof message === "string") div.textContent = message;
+		if (typeof message === "string") div.innerHTML = message;
 		else div.appendChild(message);
 
 		document.querySelector("#TextAreaChatLog").appendChild(div);

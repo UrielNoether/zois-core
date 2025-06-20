@@ -120,7 +120,8 @@ function Toast({
                                 style={
                                     {
                                         color: type === "info" ? "#b8b8ff" : type === "success" ? "#c7f9c7" : type === "error" ? "#f8bcbc" : "#ffeec5",
-                                        fontSize: "70%"
+                                        fontSize: "70%",
+                                        overflowWrap: "anywhere"
                                     }
                                 }
                             >

@@ -132,11 +132,11 @@
 }
 
 .zcToast[data-zc-toast-type="success"] {
-    background: rgb(66 240 143);
+    background: #3ece7e;
 }
 
 .zcToast[data-zc-toast-type="warning"] {
-    background: #ffdb82;
+    background: #debf72;
 }
 
 .zcToast[data-zc-toast-type="error"] {
@@ -178,6 +178,7 @@
 }
 
 .zcToast {
+    max-width: 20vw;
     animation: zcSlideInFromLeft 0.3s ease-out forwards;
 }
 
@@ -190,11 +191,11 @@
 }
 
 .zcToast[data-zc-toast-type="success"] .zcToast-ProgressBar {
-    background: rgb(47, 209, 120);
+    background: #34bc71;
 }
 
 .zcToast[data-zc-toast-type="warning"] .zcToast-ProgressBar {
-    background: #e1bd62;
+    background: #d0af5e;
 
 }
 
