@@ -646,9 +646,11 @@ export abstract class BaseSubscreen {
         }
 
         const backBtn = document.createElement("button");
-        backBtn.style.cssText = "position: absolute; left: 1vw; font-size: 3.5vw; aspect-ratio: 1/1; height: 140%;";
+        backBtn.style.cssText = `
+        position: absolute; left: 1vw; font-size: 3.5vw; aspect-ratio: 1/1;
+        height: 140%; background-image: url("Icons/Prev.png"); background-size: 100%;
+        `;
         backBtn.classList.add("zcButton");
-        backBtn.textContent = "🡄";
         backBtn.addEventListener("click", () => {
             if (currentIndex === 0) return backBtn.classList.add("zcDisabled");
             if (typeof isDisabled === "function" && isDisabled(items[currentIndex - 1][1])) return backBtn.classList.add("zcDisabled");
@@ -659,9 +661,11 @@ export abstract class BaseSubscreen {
         });
 
         const nextBtn = document.createElement("button");
-        nextBtn.style.cssText = "position: absolute; right: 1vw; font-size: 3.5vw; aspect-ratio: 1/1; height: 140%;";
+        nextBtn.style.cssText = `
+        position: absolute; right: 1vw; font-size: 3.5vw; aspect-ratio: 1/1;
+        height: 140%; background-image: url("Icons/Next.png"); background-size: 100%;
+        `;
         nextBtn.classList.add("zcButton");
-        nextBtn.textContent = "🡆";
         nextBtn.addEventListener("click", () => {
             if (currentIndex === items.length - 1) return nextBtn.classList.add("zcDisabled");
             if (typeof isDisabled === "function" && isDisabled(items[currentIndex + 1][1])) return nextBtn.classList.add("zcDisabled");

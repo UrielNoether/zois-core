@@ -178,7 +178,7 @@
 }
 
 .zcToast {
-    max-width: 20vw;
+    max-width: 25vw;
     animation: zcSlideInFromLeft 0.3s ease-out forwards;
 }
 
