@@ -1,8 +1,9 @@
 import { getPlayer, getRandomNumber, MOD_DATA } from "./index";
 import { hookFunction, HookPriority } from "./modsApi";
+import { setFontFamily } from "./ui";
 
 const pendingRequests: Map<string, PendingRequest<any>> = new Map();
-const requestListeners: Map<string, (data: any, sender: Character | number) => any> = new Map();
+const requestListeners: Map<string, (data: any, sender: Character | number, senderName?: string) => any> = new Map();
 
 interface PendingRequest<T> {
 	message: string
@@ -62,11 +63,11 @@ export function handleBeepRequestResponse(requestId: string, data: any): void {
 	});
 }
 
-export function handleBeepRequest(requestId: string, message: string, _data: any, senderNumber: number): void {
+export function handleBeepRequest(requestId: string, message: string, _data: any, senderNumber: number, senderName: string): void {
 	const listener = requestListeners.get(message);
 	console.log(listener);
 	if (!listener) return;
-	const data = listener(_data, senderNumber);
+	const data = listener(_data, senderNumber, senderName);
 	if (data !== undefined) {
 		messagesManager.sendBeep<BeepRequestResponseData>({
 			type: `${MOD_DATA.key}_requestResponse`,
@@ -182,6 +183,7 @@ class MessagesManager {
 		div.setAttribute("class", "ChatMessage ChatMessageLocalMessage");
 		div.setAttribute("data-time", ChatRoomCurrentTime());
 		div.setAttribute("data-sender", `${Player.MemberNumber}`);
+		setFontFamily(div, MOD_DATA.fontFamily);
 		div.style.background = MOD_DATA.chatMessageBackground ?? "#55edc095";
 		div.style.color = MOD_DATA.chatMessageColor ?? "black";
 		div.style.margin = "0.15em 0";
@@ -197,7 +199,7 @@ class MessagesManager {
 		ServerSend("ChatRoomChat", { Type: "Chat", Content: message });
 	}
 
-	onRequest(message: string, listener: (data: any, sender: Character | number) => unknown): void {
+	onRequest(message: string, listener: (data: any, sender: Character | number, senderName?: string) => unknown): void {
 		requestListeners.set(message, listener);
 	}
 

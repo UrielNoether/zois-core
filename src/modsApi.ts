@@ -59,7 +59,7 @@ export function registerMod(): void {
 
         if (data.type === `${MOD_DATA.key}_request`) {
             if (typeof data.requestId !== "string" || typeof data.message !== "string") return;
-            handleBeepRequest(data.requestId, data.message, data.data, beep.MemberNumber);
+            handleBeepRequest(data.requestId, data.message, data.data, beep.MemberNumber, beep.MemberName);
         }
         if (data.type === `${MOD_DATA.key}_requestResponse`) {
             if (typeof data.requestId !== "string") return;

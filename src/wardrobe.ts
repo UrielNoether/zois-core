@@ -14,6 +14,11 @@ export function smartGetAssetGroup(item: Item | Asset | AssetGroup): AssetGroup 
     return group;
 }
 
+export function smartGetItemName(item: Item): string {
+    if (item?.Craft?.Name) return item.Craft.Name;
+    return item?.Asset?.Description;
+}
+
 export function isAssetGroupName(name: string): name is AssetGroupName {
     return AssetGroup.some((group) => group.Name === name);
 }
