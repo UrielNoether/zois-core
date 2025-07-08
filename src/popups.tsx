@@ -352,7 +352,7 @@ function App(): JSX.Element {
 
 class VirtualDOM extends HTMLElement {
     disconnectedCallback() {
-        ServerShowBeep("VirtualDOM was removed, chaos is coming...", 4000);
+        ServerShowBeep("VirtualDOM was removed, chaos is coming...", 5000, {});
     }
 }
 

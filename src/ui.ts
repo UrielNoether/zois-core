@@ -276,7 +276,7 @@ export abstract class BaseSubscreen {
                 x: 100,
                 y: 60,
                 fontSize: 10
-            });
+            }).style.cssText += "max-width: 85%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
         }
         if (subscreenHooks[this.name]) {
             subscreenHooks[this.name].forEach((hook) => hook(this));
