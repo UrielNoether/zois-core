@@ -276,9 +276,9 @@ export abstract class BaseSubscreen {
                 x: 100,
                 y: 60,
                 fontSize: 10
-            }).style.cssText += "max-width: 85%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+            }).style.cssText += "max-width: 85%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0.1em;";
         }
-        if (subscreenHooks[this.name]) {
+        if (subscreenHooks[this.constructor.name]) {
             subscreenHooks[this.name].forEach((hook) => hook(this));
         }
     }
@@ -447,6 +447,7 @@ export abstract class BaseSubscreen {
         input.type = "checkbox"
         input.checked = isChecked;
         input.style.borderRadius = "min(0.8dvh, 0.3dvw)";
+        input.style.aspectRatio = "1/1";
         input.classList.add("zcCheckbox", "checkbox");
 
         const p = document.createElement("p");

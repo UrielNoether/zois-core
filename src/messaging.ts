@@ -65,7 +65,6 @@ export function handleBeepRequestResponse(requestId: string, data: any): void {
 
 export function handleBeepRequest(requestId: string, message: string, _data: any, senderNumber: number, senderName: string): void {
 	const listener = requestListeners.get(message);
-	console.log(listener);
 	if (!listener) return;
 	const data = listener(_data, senderNumber, senderName);
 	if (data !== undefined) {

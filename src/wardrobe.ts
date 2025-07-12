@@ -94,7 +94,7 @@ export function importAppearance(
             return false;
         });
     }
-    
+
     for (const item of bundleToAttach) {
         if (!ignoreAccessValidation) {
             if (!validationCanAccessCheck(characterValidate, item.Asset.Group.Name, item.Asset)) continue;
@@ -120,7 +120,17 @@ export function validationCanAccessCheck(C: Character, group: AssetGroupName, as
 }
 
 export function serverAppearanceBundleToAppearance(assetFamily: IAssetFamily, serverAppearanceBundle: AppearanceBundle): Item[] {
-	return serverAppearanceBundle.map((t) => {
-		return ServerBundledItemToAppearanceItem(assetFamily, t);
-	});
+    return serverAppearanceBundle.map((t) => {
+        return ServerBundledItemToAppearanceItem(assetFamily, t);
+    });
+}
+
+export function addRequiredAppearanceItems(appearanceBundle: Item[]): void {
+    AssetGroup.forEach((group) => {
+        if (group.Category !== "Appearance" || group.AllowNone) return;
+        if (appearanceBundle.find((i) => i.Asset.Group.Name === group.Name)) return;
+        const asset = AssetGet("Female3DCG", group.Name, group.Asset[0]?.Name);
+        if (!asset) return;
+        appearanceBundle.push({ Asset: asset, Color: group.DefaultColor });
+    });
 }
