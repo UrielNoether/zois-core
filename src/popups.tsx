@@ -42,7 +42,7 @@ function ToastsContainer({ children }: { children: ReactNode }): JSX.Element {
     useEffect(() => {
         const update = () => {
             setToastsContainerStyle({
-                fontFamily: MOD_DATA.fontFamily ?? "sans-serif",
+                fontFamily: "ui-sans-serif",
                 bottom: getRelativeY(5) + "px",
                 left: getRelativeX(5) + "px"
             });
@@ -117,13 +117,12 @@ function Toast({
                         <>
                             <p>{title}</p>
                             <p
-                                style={
-                                    {
-                                        color: type === "info" ? "#b8b8ff" : type === "success" ? "#c7f9c7" : type === "error" ? "#f8bcbc" : "#ffeec5",
-                                        fontSize: "70%",
-                                        overflowWrap: "anywhere"
-                                    }
-                                }
+                                style={{
+                                    color: type === "info" ? "#b8b8ff" : type === "success" ? "#c7f9c7" : type === "error" ? "#f8bcbc" : "#ffeec5",
+                                    fontSize: "70%",
+                                    overflowWrap: "anywhere",
+                                    marginTop: "0.25em"
+                                }}
                             >
                                 {message}
                             </p>
@@ -132,12 +131,10 @@ function Toast({
                     {
                         ((!title && message) || (title && !message)) &&
                         <p
-                            style={
-                                {
-                                    position: "relative",
-                                    zIndex: 5
-                                }
-                            }
+                            style={{
+                                position: "relative",
+                                zIndex: 5
+                            }}
                         >
                             {title ? title : message}
                         </p>
@@ -146,15 +143,13 @@ function Toast({
             </div>
             <div
                 className="zcToast-ProgressBar"
-                style={
-                    {
-                        animation: `zcToast-progress ${duration}ms linear 0s 1 alternate none`,
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        height: "100%"
-                    }
-                }
+                style={{
+                    animation: `zcToast-progress ${duration}ms linear 0s 1 alternate none`,
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    height: "100%"
+                }}
             />
         </div>
     );
@@ -179,7 +174,7 @@ function Dialog({ dialog }: { dialog: DialogProps }): JSX.Element {
                 transform: "translate(-50%, -50%)",
                 background: "rgba(36, 36, 36, 0.96)",
                 zIndex: 20,
-                fontFamily: MOD_DATA.fontFamily ?? "sans-serif",
+                fontFamily: "ui-sans-serif",
                 border: "none",
                 padding: 2 * scaleFactor
             });
