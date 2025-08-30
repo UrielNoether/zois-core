@@ -80,6 +80,7 @@ const ToastIcon: FC<{ type: ToastProps["type"], theme: ToastProps["theme"] }> = 
             return (
                 <Info
                     style={{
+                        flexShrink: 0,
                         width: "1.65em",
                         height: "1.65em",
                         fill: theme ? theme.iconFillColor : "#addbff",
@@ -91,6 +92,7 @@ const ToastIcon: FC<{ type: ToastProps["type"], theme: ToastProps["theme"] }> = 
             return (
                 <CircleCheck
                     style={{
+                        flexShrink: 0,
                         width: "1.65em",
                         height: "1.65em",
                         fill: theme ? theme.iconFillColor : "#c3ffc3",
@@ -102,6 +104,7 @@ const ToastIcon: FC<{ type: ToastProps["type"], theme: ToastProps["theme"] }> = 
             return (
                 <CircleAlert
                     style={{
+                        flexShrink: 0,
                         width: "1.65em",
                         height: "1.65em",
                         fill: theme ? theme.iconFillColor : "#ffdfaf",
@@ -113,6 +116,7 @@ const ToastIcon: FC<{ type: ToastProps["type"], theme: ToastProps["theme"] }> = 
             return (
                 <CircleX
                     style={{
+                        flexShrink: 0,
                         width: "1.65em",
                         height: "1.65em",
                         fill: theme ? theme.iconFillColor : "#ffb2b2",
@@ -124,6 +128,7 @@ const ToastIcon: FC<{ type: ToastProps["type"], theme: ToastProps["theme"] }> = 
             return (
                 <div
                     style={{
+                        flexShrink: 0,
                         width: "1.65em",
                         height: "1.65em",
                         boxSizing: "border-box",
