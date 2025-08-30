@@ -1,6 +1,6 @@
 {
   "name": "zois-core",
-  "version": "1.0.15",
+  "version": "1.1.0",
   "description": "The core for the my mods, which contains a shared code reused in all my mods",
   "scripts": {
     "build": "node scripts/build.mjs"
@@ -28,6 +28,14 @@
       "import": "./dist/ui.js",
       "types": "./dist/types/ui.d.ts"
     },
+    "./ui-modules": {
+      "import": "./dist/ui-modules/index.js",
+      "types": "./dist/types/ui-modules/index.d.ts"
+    },
+    "./modules": {
+      "import": "./dist/modules.js",
+      "types": "./dist/types/modules.d.ts"
+    },
     "./wardrobe": {
       "import": "./dist/wardrobe.js",
       "types": "./dist/types/wardrobe.d.ts"
@@ -35,6 +43,10 @@
     "./popups": {
       "import": "./dist/popups.js",
       "types": "./dist/types/popups.d.ts"
+    },
+    "./validation": {
+      "import": "./dist/validation.js",
+      "types": "./dist/types/validation.d.ts"
     }
   },
   "pnpm": {
@@ -44,8 +56,14 @@
   },
   "dependencies": {
     "bondage-club-mod-sdk": "^1.2.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "lucide": "^0.541.0",
+    "lucide-react": "^0.542.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "reflect-metadata": "^0.2.2",
+    "zois-core": "link:C:/Users/VolkPC/AppData/Local/pnpm/global/5/node_modules/zois-core",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

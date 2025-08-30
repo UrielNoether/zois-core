@@ -3,7 +3,7 @@ import { findModByName, registerMod } from "./modsApi";
 import { initVirtualDOM, useToastsStore, useDialogStore } from "./popups";
 
 
-interface ModData {
+export interface ModData {
     name: string
     fullName: string
     key: string
@@ -12,6 +12,38 @@ interface ModData {
     chatMessageBackground?: string
     chatMessageColor?: string
     fontFamily?: string
+    singleToastsTheme?: {
+        backgroundColor: string
+        progressBarColor: string
+        titleColor: string
+        messageColor: string
+        iconFillColor: string
+        iconStrokeColor: string
+    }
+}
+
+interface ThemedColorsModule {
+    base: {
+        accent: string
+        accentDisabled: string
+        accentHover: string
+        element: string
+        elementDisabled: string
+        elementHint: string
+        elementHover: string
+        main: string
+        text: string
+    }
+    special: {
+        allowed: string
+        blocked: string
+        crafted: string
+        equipped: string
+        limited: string
+        roomBlocked: string
+        roomFriend: string
+        roomGame: string
+    }
 }
 
 export { version } from "../package.json";
@@ -102,7 +134,7 @@ export function getNickname(target: Character): string {
     return CharacterNickname(target);
 }
 
-export function getThemedColorsModule() {
+export function getThemedColorsModule(): ThemedColorsModule | null {
     if (!findModByName("Themed")) return null;
     const themedData = JSON.parse(LZString.decompressFromBase64(Player.ExtensionSettings.Themed ?? ""));
     if (
@@ -110,4 +142,14 @@ export function getThemedColorsModule() {
         !themedData?.GlobalModule?.doVanillaGuiOverhaul
     ) return null;
     return themedData.ColorsModule;
+}
+
+export function injectStyles(stylesToInject: string) {
+    const style = document.createElement("style");
+    style.innerHTML = stylesToInject;
+    document.head.append(style);
+}
+
+export function waitForStart(callback: () => void) {
+    waitFor(() => typeof Player.MemberNumber === "number").then(() => setTimeout(callback, getRandomNumber(3000, 6000)));
 }

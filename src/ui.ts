@@ -1,19 +1,26 @@
+import { Check, ChevronDown, CircleX, createElement, Trash2 } from "lucide";
 import { getThemedColorsModule, MOD_DATA } from "./index";
+import { BaseModule, Context } from "./modules";
+import { StyleModule } from "./ui-modules";
 
-type Anchor = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+export type Anchor = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
-interface CreateButtonArgs {
-    text?: string
+interface BaseElementArgs<T extends string> {
     x?: number
     y?: number
+    anchor?: Anchor
+    place?: boolean
+    modules?: Partial<Record<T, BaseModule[]>>
+}
+
+interface CreateButtonArgs extends BaseElementArgs<"base" | "icon" | "text"> {
+    text?: string
     fontSize?: number | "auto"
     width?: number
     height?: number
     padding?: number
     style?: "default" | "green" | "inverted"
-    anchor?: Anchor
-    place?: boolean
-    icon?: string
+    icon?: string | SVGElement
     iconAbsolutePosition?: boolean
     iconWidth?: string
     tooltip?: {
@@ -24,100 +31,71 @@ interface CreateButtonArgs {
     isDisabled?: () => boolean
 }
 
-interface CreateTextArgs {
+interface CreateTextArgs extends BaseElementArgs<"base"> {
     text?: string
     color?: string
-    x?: number
-    y?: number
     fontSize?: number | "auto"
     withBackground?: boolean
     width?: number
     height?: number
     padding?: number
-    anchor?: Anchor
-    place?: boolean
 }
 
-interface CreateInputArgs {
+interface CreateInputArgs extends BaseElementArgs<"base"> {
     value?: string
     placeholder?: string
-    x?: number
-    y?: number
     width: number
     height?: number
     textArea?: boolean
     fontSize?: number | "auto"
-    anchor?: Anchor
     padding?: number
-    place?: boolean
     onChange?: () => void
     onInput?: () => void
     isDisabled?: () => boolean
 }
 
-interface CreateCheckboxArgs {
+interface CreateCheckboxArgs extends BaseElementArgs<"base" | "checkbox" | "label"> {
     isChecked: boolean
-    x?: number
-    y?: number
     width?: number
     text: string
-    anchor?: Anchor
-    place?: boolean
     onChange?: () => void
     isDisabled?: () => boolean
 }
 
-interface CreateScrollViewArgs {
+interface CreateScrollViewArgs extends BaseElementArgs<"base"> {
     scroll: "x" | "y" | "all"
-    x: number
-    y: number
     width: number,
     height?: number
-    anchor?: Anchor
 }
 
-interface CreateInputListArgs {
+interface CreateInputListArgs extends BaseElementArgs<"base" | "input"> {
     value?: string[] | number[]
     title?: string
-    x?: number
-    y?: number
     width: number
     height?: number
     fontSize?: number | "auto"
-    anchor?: Anchor
     padding?: number
-    place?: boolean
     numbersOnly?: boolean
     onChange?: (value: string[] | number[]) => void
     isDisabled?: () => boolean
 }
 
-interface CreateImageArgs {
+interface CreateImageArgs extends BaseElementArgs<"base"> {
     src: string
-    x: number
-    y: number
     width: number
-    anchor?: Anchor
-    place?: boolean
 }
 
-interface CreateBackNextButtonArgs {
-    x: number
-    y: number
+interface CreateBackNextButtonArgs extends BaseElementArgs<"base" | "backButton" | "nextButton" | "text"> {
     width: number
     height: number
     items: [string, any?][]
     currentIndex: number
     isBold?: boolean
-    anchor?: Anchor
-    place?: boolean
     onChange?: (value: any) => void
     isDisabled?: (value: any) => boolean
 }
 
-interface CreateTabArgs {
-    x: number
-    y: number
+interface CreateTabArgs extends BaseElementArgs<"base"> {
     width: number
     tabs: {
         name: string
@@ -127,10 +105,27 @@ interface CreateTabArgs {
         exit?: () => void
     }[]
     currentTabName: string
-    anchor?: Anchor
 }
 
-interface DrawPolylineArrowArgs {
+interface CreateCardArgs extends BaseElementArgs<"base" | "name" | "value" | "icon"> {
+    name: string
+    value: string | number
+    icon?: SVGElement
+}
+
+interface CreateSelectArgs extends BaseElementArgs<"base"> {
+    width: number
+    options: {
+        name: any
+        text: string
+        icon?: SVGElement
+    }[]
+    currentOption: string
+    onChange?: (name: any) => void
+    isDisabled?: () => boolean
+}
+
+interface DrawPolylineArrowArgs extends Omit<BaseElementArgs<"base">, "x" | "y"> {
     points: {
         x: number
         y: number
@@ -247,6 +242,71 @@ export abstract class BaseSubscreen {
     private resizeEventListeners: EventListener[] = [];
     private tabHandlers: Omit<CreateTabArgs["tabs"][0], "name"> = {};
 
+    private addElement<T extends string>(element: HTMLElement, {
+        x, y, width, height, padding, fontSize = "auto", anchor, place, modules = {}, modulesMap
+    }: {
+        x?: number
+        y?: number
+        width?: number
+        height?: number
+        padding?: number
+        fontSize?: number | "auto"
+        anchor?: Anchor
+        place?: boolean
+        modules?: Record<string, BaseModule[]>
+        modulesMap: Record<T, HTMLElement | SVGElement>
+    }) {
+        setFontFamily(element, MOD_DATA.fontFamily);
+
+        const context: Context = {
+            anchor, x, y, width, height,
+            padding, fontSize, place, element
+        };
+
+        Object.keys(modules)?.forEach((k) => {
+            modules[k].forEach((m: BaseModule) => {
+                const props = m.overrideProperties(context, modulesMap[k]);
+                anchor = props.anchor;
+                x = props.x;
+                y = props.y;
+                width = props.width;
+                height = props.height;
+                padding = props.padding;
+                fontSize = props.fontSize;
+                place = props.place;
+                element = props.element;
+            });
+        });
+
+        const setProperties = () => {
+            if (typeof x === "number" && typeof y === "number") setPosition(element, x, y, anchor);
+            if (fontSize === "auto") autosetFontSize(element);
+            else setFontSize(element, fontSize);
+            if (padding) setPadding(element, padding);
+            if (width) element.style.width = getRelativeWidth(width) + "px";
+            if (height) element.style.height = getRelativeHeight(height) + "px";
+        }
+
+        setProperties();
+        window.addEventListener("resize", setProperties);
+
+        Object.keys(modules)?.forEach((k) => {
+            modules[k].forEach((m: BaseModule) => {
+                m.layoutEffect(context, modulesMap[k]);
+            });
+        });
+
+        if (place) document.body.append(element);
+        this.resizeEventListeners.push(setProperties);
+        this.htmlElements.push(element);
+
+        Object.keys(modules)?.forEach((k) => {
+            modules[k].forEach((m: BaseModule) => {
+                m.effect(context, modulesMap[k]);
+            });
+        });
+    }
+
     get currentSubscreen(): BaseSubscreen | null {
         return currentSubscreen;
     }
@@ -308,8 +368,10 @@ export abstract class BaseSubscreen {
         text, x, y, width, height, fontSize = "auto",
         anchor = "top-left", padding, style = "default",
         place = true, icon, iconAbsolutePosition = true,
-        iconWidth, tooltip, onClick, isDisabled
+        iconWidth, tooltip, onClick, isDisabled, modules
     }: CreateButtonArgs): HTMLButtonElement {
+        let iconElement: HTMLImageElement | SVGElement;
+        let textElement: HTMLSpanElement;
         const btn = document.createElement("button");
         btn.classList.add("zcButton");
         btn.setAttribute("data-zc-style", style);
@@ -320,26 +382,30 @@ export abstract class BaseSubscreen {
         setFontFamily(btn, MOD_DATA.fontFamily);
 
         if (icon) {
-            const img = document.createElement("img");
-            img.src = icon;
-            if (iconWidth) img.style.width = iconWidth;
-            else img.style.height = "80%";
+            if (typeof icon === "string") {
+                iconElement = document.createElement("img");
+                iconElement.src = icon;
+            } else {
+                iconElement = icon;
+            }
+            if (iconWidth) iconElement.style.width = iconWidth;
+            else iconElement.style.height = "80%";
             if (text && iconAbsolutePosition) {
-                img.style.position = "absolute";
-                img.style.left = "1vw";
+                iconElement.style.position = "absolute";
+                iconElement.style.left = "1vw";
             }
             if (text && !iconAbsolutePosition) btn.style.justifyContent = "";
-            btn.append(img);
+            btn.append(iconElement);
         }
 
         if (text) {
-            const span = document.createElement("span");
-            span.textContent = text;
+            textElement = document.createElement("span");
+            textElement.textContent = text;
             if (icon && !iconAbsolutePosition && iconWidth) {
-                span.style.width = "100%";
-                span.style.marginRight = iconWidth;
+                textElement.style.width = "100%";
+                textElement.style.marginRight = iconWidth;
             }
-            btn.append(span);
+            btn.append(textElement);
         }
 
         if (tooltip) {
@@ -350,30 +416,25 @@ export abstract class BaseSubscreen {
             btn.append(tooltipEl);
         }
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(btn, x, y, anchor);
-            setSize(btn, width, height);
-            if (padding) setPadding(btn, padding);
-            if (fontSize === "auto") autosetFontSize(btn);
-            else setFontSize(btn, fontSize);
-        }
-
-        setProperties();
         if (typeof isDisabled === "function" && isDisabled()) btn.classList.add("zcDisabled");
         btn.addEventListener("click", () => {
             if (typeof isDisabled === "function" && isDisabled()) return btn.classList.add("zcDisabled");
             if (typeof onClick === "function") onClick();
         });
-        window.addEventListener("resize", setProperties);
-        if (place) document.body.append(btn);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(btn);
+        this.addElement<keyof CreateButtonArgs["modules"]>(btn, {
+            x, y, width, height, anchor, place, fontSize, padding, modules, modulesMap: {
+                base: btn,
+                text: textElement,
+                icon: iconElement
+            }
+        });
         return btn;
     }
 
     createText({
         text, color, x, y, width, height, withBackground = false,
-        fontSize = "auto", anchor = "top-left", padding, place = true
+        fontSize = "auto", anchor = "top-left", padding, place = true,
+        modules
     }: CreateTextArgs): HTMLParagraphElement {
         const p = document.createElement("p");
         p.innerHTML = text;
@@ -381,26 +442,18 @@ export abstract class BaseSubscreen {
         if (withBackground) p.style.background = "var(--tmd-element,rgb(239, 239, 239))";
         setFontFamily(p, MOD_DATA.fontFamily);
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(p, x, y, anchor);
-            setSize(p, width, height);
-            if (padding) setPadding(p, padding);
-            if (fontSize === "auto") autosetFontSize(p);
-            else setFontSize(p, fontSize);
-        }
-
-        setProperties();
-        window.addEventListener("resize", setProperties);
-        if (place) document.body.append(p);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(p);
+        this.addElement<keyof CreateTextArgs["modules"]>(p, {
+            x, y, width, height, anchor, place, fontSize, padding, modules, modulesMap: {
+                base: p
+            }
+        });
         return p;
     }
 
     createInput({
         value, placeholder, x, y, width, height, textArea = false,
         fontSize = "auto", anchor = "top-left", padding, place = true,
-        onChange, onInput, isDisabled
+        onChange, onInput, isDisabled, modules
     }: CreateInputArgs): HTMLInputElement | HTMLTextAreaElement {
         const input = document.createElement(textArea ? "textarea" : "input");
         input.classList.add("zcInput");
@@ -408,15 +461,6 @@ export abstract class BaseSubscreen {
         if (value) input.value = value;
         setFontFamily(input, MOD_DATA.fontFamily);
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(input, x, y, anchor);
-            setSize(input, width, height);
-            if (padding) setPadding(input, padding);
-            if (fontSize === "auto") autosetFontSize(input);
-            else setFontSize(input, fontSize);
-        }
-
-        setProperties();
         if (typeof isDisabled === "function" && isDisabled()) input.classList.add("zcDisabled");
         input.addEventListener("change", () => {
             if (typeof isDisabled === "function" && isDisabled()) return input.classList.add("zcDisabled");
@@ -426,15 +470,16 @@ export abstract class BaseSubscreen {
             if (typeof isDisabled === "function" && isDisabled()) return input.classList.add("zcDisabled");
             if (typeof onInput === "function") onInput();
         });
-        window.addEventListener("resize", setProperties);
-        if (place) document.body.append(input);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(input);
+        this.addElement<keyof CreateInputArgs["modules"]>(input, {
+            x, y, width, height, anchor, place, fontSize, padding, modules, modulesMap: {
+                base: input
+            }
+        });
         return input;
     }
 
     createCheckbox({
-        text, x, y, isChecked, width,
+        text, x, y, isChecked, width, modules,
         anchor = "top-left", place = true,
         isDisabled, onChange
     }: CreateCheckboxArgs): HTMLDivElement {
@@ -455,50 +500,41 @@ export abstract class BaseSubscreen {
         p.style.color = "var(--tmd-text, black)";
         setFontFamily(p, MOD_DATA.fontFamily);
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(checkbox, x, y, anchor);
-            if (width) checkbox.style.width = getRelativeWidth(width) + "px";
-            setFontSize(p, 5);
-        }
-
-        setProperties();
         if (typeof isDisabled === "function" && isDisabled()) checkbox.classList.add("zcDisabled");
         checkbox.addEventListener("change", () => {
             if (typeof isDisabled === "function" && isDisabled()) return checkbox.classList.add("zcDisabled");
             if (typeof onChange === "function") onChange();
         });
-        window.addEventListener("resize", setProperties);
         checkbox.append(input, p);
-        if (place) document.body.append(checkbox);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(checkbox, p);
+        this.addElement<keyof CreateCheckboxArgs["modules"]>(checkbox, {
+            x, y, width, anchor, place, modules, modulesMap: {
+                base: checkbox,
+                checkbox: input,
+                label: p
+            }
+        });
         return checkbox;
     }
 
     createScrollView({
         scroll, x, y, width, height,
-        anchor = "top-left"
+        anchor = "top-left", modules, place = true
     }: CreateScrollViewArgs): HTMLDivElement {
         const div = document.createElement("div");
         if (scroll === "all") div.style.overflow = "scroll";
         if (scroll === "x") div.style.overflowX = "scroll";
         if (scroll === "y") div.style.overflowY = "scroll";
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y, anchor);
-            setSize(div, width, height);
-        }
-
-        setProperties();
-        window.addEventListener("resize", setProperties);
-        document.body.append(div);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(div);
+        this.addElement<keyof CreateScrollViewArgs["modules"]>(div, {
+            x, y, width, height, anchor, place, modules, modulesMap: {
+                base: div
+            }
+        });
         return div;
     }
 
     createInputList({
-        x, y, width, height, title, value,
+        x, y, width, height, title, value, modules,
         anchor = "top-left", place = true, numbersOnly = false,
         isDisabled, onChange
     }: CreateInputListArgs): HTMLDivElement {
@@ -524,14 +560,28 @@ export abstract class BaseSubscreen {
         const input = document.createElement("input");
         input.style.cssText = "border: none; outline: none; background: none; height: fit-content; flex-grow: 1; padding: 0.8vw; width: 6vw; font-size: clamp(8px, 2vw, 20px);";
 
-        const addButton = (icon: string, onClick: () => void) => {
-            const b = document.createElement("button");
-            b.style.cssText = "cursor: pointer; display: grid; place-items: center; background: var(--tmd-element-hover, #e0e0e0); width: 10%; max-width: 40px; aspect-ratio: 1/1; border-radius: 8px; border: none;";
-            const img = DrawGetImage(icon);
-            img.style.cssText = "width: 90%;";
-            b.append(img);
+        const addButton = (icon: SVGElement, onClick: () => void) => {
+            // const b = document.createElement("button");
+            // b.style.cssText = "cursor: pointer; display: grid; place-items: center; background: var(--tmd-element-hover, #e0e0e0); width: 10%; max-width: 40px; aspect-ratio: 1/1; border-radius: 8px; border: none;";
+            // icon.style.cssText = "width: 90%;";
+            // b.append(icon);
+            const b = this.createButton({
+                icon,
+                place: false,
+                onClick,
+                style: "default",
+                modules: {
+                    icon: [
+                        new StyleModule({
+                            width: "70%",
+                            height: "70%"
+                        })
+                    ]
+                }
+            });
+            b.style.width = "2em";
+            b.style.aspectRatio = "1/1";
             buttonsElement.append(b);
-            b.addEventListener("click", onClick);
         }
 
         const addItem = (text: string) => {
@@ -547,12 +597,7 @@ export abstract class BaseSubscreen {
             items.push(text);
         }
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y, anchor);
-            setSize(div, width, height);
-        }
-
-        addButton("Icons/Cancel.png", () => {
+        addButton(createElement(CircleX), () => {
             if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
             itemsElement.innerHTML = "";
             items.splice(0, items.length);
@@ -560,7 +605,7 @@ export abstract class BaseSubscreen {
             value.forEach((v) => addItem(String(v)));
             if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         });
-        addButton("Icons/Trash.png", () => {
+        addButton(createElement(Trash2), () => {
             if (typeof isDisabled === "function" && isDisabled()) return div.classList.add("zcDisabled");
             for (const c of [...itemsElement.children]) {
                 if (c.getAttribute("style").includes("border: 2px solid red;")) {
@@ -570,9 +615,7 @@ export abstract class BaseSubscreen {
             }
             if (typeof onChange === "function") onChange(numbersOnly ? items.map((i) => parseInt(i)) : items);
         });
-        setProperties();
         if (typeof isDisabled === "function" && isDisabled()) div.classList.add("zcDisabled");
-        window.addEventListener("resize", setProperties);
         input.addEventListener("keypress", (e) => {
             if (document.activeElement === input) {
                 switch (e.key) {
@@ -593,35 +636,33 @@ export abstract class BaseSubscreen {
         div.addEventListener("click", (e) => { if (e.currentTarget == div) input.focus() });
         itemsElement.append(input);
         div.append(buttonsElement, titleElement, itemsElement);
-        if (place) document.body.append(div);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(div);
+        this.addElement<keyof CreateInputListArgs["modules"]>(div, {
+            x, y, width, height, anchor, place, modules, modulesMap: {
+                base: div,
+                input
+            }
+        });
         value.forEach((v) => addItem(String(v)));
         return div;
     }
 
     createImage({
-        x, y, width, src, place = true, anchor = "top-left"
+        x, y, width, src, place = true, anchor = "top-left", modules
     }: CreateImageArgs): HTMLImageElement {
         const img = document.createElement("img");
+        img.style.height = "auto";
         img.src = src;
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(img, x, y, anchor);
-            setSize(img, width, 0);
-            img.style.height = "auto";
-        }
-
-        setProperties();
-        window.addEventListener("resize", setProperties);
-        if (place) document.body.append(img);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(img);
+        this.addElement<keyof CreateImageArgs["modules"]>(img, {
+            x, y, width, height: 0, anchor, place, modules, modulesMap: {
+                base: img
+            }
+        });
         return img;
     }
 
     createBackNextButton({
-        x, y, width, height, items, currentIndex,
+        x, y, width, height, items, currentIndex, modules,
         isBold = false, anchor = "top-left", place = true,
         onChange, isDisabled
     }: CreateBackNextButtonArgs): HTMLDivElement {
@@ -684,22 +725,19 @@ export abstract class BaseSubscreen {
 
         div.append(backBtn, text, nextBtn);
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(div, x, y, anchor);
-            setSize(div, width, height);
-            autosetFontSize(text);
-        }
-
-        setProperties();
-        window.addEventListener("resize", setProperties);
-        if (place) document.body.append(div);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(div);
+        this.addElement<keyof CreateBackNextButtonArgs["modules"]>(div, {
+            x, y, width, height, anchor, place, modules, modulesMap: {
+                base: div,
+                backButton: backBtn,
+                nextButton: nextBtn,
+                text
+            }
+        });
         return div;
     }
 
     createTabs({
-        x, y, width, tabs, anchor = "top-left", currentTabName
+        x, y, width, tabs, anchor = "top-left", place = true, currentTabName, modules
     }: CreateTabArgs): HTMLDivElement {
         let tabElements: (Node | string)[] = [];
 
@@ -740,17 +778,11 @@ export abstract class BaseSubscreen {
             tabsEl.append(tabEl);
         });
 
-        const setProperties = () => {
-            if (typeof x === "number" && typeof y === "number") setPosition(tabsEl, x, y, anchor);
-            if (width) tabsEl.style.width = getRelativeWidth(width) + "px";
-            autosetFontSize(tabsEl);
-        }
-
-        setProperties();
-        window.addEventListener("resize", setProperties);
-        document.body.append(tabsEl);
-        this.resizeEventListeners.push(setProperties);
-        this.htmlElements.push(tabsEl);
+        this.addElement<keyof CreateTabArgs["modules"]>(tabsEl, {
+            x, y, width, anchor, place, modules, modulesMap: {
+                base: tabsEl
+            }
+        });
         return tabsEl;
     }
 
@@ -783,6 +815,101 @@ export abstract class BaseSubscreen {
         ctx.fill();
 
         ctx.restore();
+    }
+
+    createCard({
+        x, y, name, value, icon, anchor = "top-left", place = true, modules
+    }: CreateCardArgs): HTMLDivElement {
+        const cardEl = document.createElement("div");
+        cardEl.classList.add("zcCard");
+
+        const cardName = document.createElement("p");
+        cardName.classList.add("zcCard_name");
+        cardName.textContent = name;
+
+        const cardValue = document.createElement("p");
+        cardValue.classList.add("zcCard_value");
+        cardValue.textContent = `${value}`;
+
+        if (icon) {
+            icon.style.cssText += "position: absolute; top: 0.4em; right: 0.4em; width: 1.2em; height: 1.2em;";
+            cardEl.append(icon);
+        }
+
+        cardEl.append(cardName, cardValue);
+        this.addElement<keyof CreateCardArgs["modules"]>(cardEl, {
+            x, y, anchor, place, modules, modulesMap: {
+                name: cardName,
+                value: cardValue,
+                base: cardEl,
+                icon: null
+            }
+        });
+        return cardEl;
+    }
+
+    createSelect({
+        x, y, width, options, currentOption, anchor = "top-left", place = true,
+        modules, onChange, isDisabled
+    }: CreateSelectArgs): HTMLDivElement {
+        let isOpened = false;
+        let optionsContainer: HTMLDivElement;
+
+        const select = document.createElement("div");
+        select.classList.add("zcSelect");
+        select.setAttribute("opened", false);
+        select.addEventListener("click", () => {
+            if (isDisabled && isDisabled()) return select.classList.add("zcDisabled");
+            if (isOpened) {
+                isOpened = false;
+                optionsContainer.remove();
+            } else {
+                isOpened = true;
+                optionsContainer = document.createElement("div");
+                optionsContainer.setAttribute(
+                    "data-zc-position",
+                    typeof y === "number" && y > (500 - select.offsetHeight / 2) ? "top" : "bottom"
+                );
+                options.forEach((option) => {
+                    const e = document.createElement("div");
+                    e.style.cssText = "display: flex; align-items: center; column-gap: 0.5em;";
+                    if (option.icon) {
+                        option.icon.style.cssText = "color: #bcbcbc;";
+                        e.append(option.icon);
+                    }
+                    e.append(option.text);
+                    if (option.name === currentOption) {
+                        e.append(checkmark);
+                    }
+                    e.addEventListener("click", () => {
+                        currentOption = option.name;
+                        p.textContent = option.text;
+                        optionsContainer.remove();
+                        if (onChange) onChange(option.name);
+                    });
+                    optionsContainer.append(e);
+                });
+                select.append(optionsContainer);
+            }
+        });
+
+        const p = document.createElement("p");
+        p.textContent = options.find((option) => option.name === currentOption).name;
+
+        const arrow = createElement(ChevronDown);
+        const checkmark = createElement(Check);
+        checkmark.style.cssText = "position: absolute; right: 0.25em;";
+
+        select.append(p, arrow);
+
+        if (isDisabled && isDisabled()) select.classList.add("zcDisabled");
+
+        this.addElement<keyof CreateSelectArgs["modules"]>(select, {
+            x, y, width, anchor, place, modules, modulesMap: {
+                base: select
+            }
+        });
+        return select;
     }
 }
 

@@ -1,12 +1,13 @@
 import { getRelativeWidth, getRelativeX, getRelativeY } from "./ui";
-import { MOD_DATA } from "./index";
-import React, { JSX, ReactNode, useState, useEffect, CSSProperties } from "react";
+import { MOD_DATA, ModData } from "./index";
+import React, { JSX, ReactNode, useState, useEffect, CSSProperties, FC } from "react";
 import ReactDOM from "react-dom/client";
 import { create } from "zustand";
-import warningIcon from "./assets/warningIcon.svg";
-import errorIcon from "./assets/errorIcon.svg";
-import infoIcon from "./assets/infoIcon.svg";
-import successIcon from "./assets/successIcon.svg";
+import WarningIcon from "./assets/warningIcon.svg";
+import ErrorIcon from "./assets/errorIcon.svg";
+import InfoIcon from "./assets/infoIcon.svg";
+import SuccessIcon from "./assets/successIcon.svg";
+import { CircleAlert, CircleCheck, CircleX, Info } from "lucide-react";
 
 
 interface ToastProps {
@@ -15,6 +16,7 @@ interface ToastProps {
     message: string
     type: "info" | "warning" | "error" | "success" | "spinner"
     duration: number
+    theme?: ModData["singleToastsTheme"]
 }
 
 interface DialogProps {
@@ -42,7 +44,7 @@ function ToastsContainer({ children }: { children: ReactNode }): JSX.Element {
     useEffect(() => {
         const update = () => {
             setToastsContainerStyle({
-                fontFamily: "ui-sans-serif",
+                fontFamily: CommonGetFontName(),
                 bottom: getRelativeY(5) + "px",
                 left: getRelativeX(5) + "px"
             });
@@ -72,8 +74,72 @@ function ToastsContainer({ children }: { children: ReactNode }): JSX.Element {
     );
 }
 
+const ToastIcon: FC<{ type: ToastProps["type"], theme: ToastProps["theme"] }> = ({ type, theme }) => {
+    switch (type) {
+        case "info":
+            return (
+                <Info
+                    style={{
+                        width: "1.65em",
+                        height: "1.65em",
+                        fill: theme ? theme.iconFillColor : "#addbff",
+                        stroke: theme ? theme.iconStrokeColor : "#385073"
+                    }}
+                />
+            );
+        case "success":
+            return (
+                <CircleCheck
+                    style={{
+                        width: "1.65em",
+                        height: "1.65em",
+                        fill: theme ? theme.iconFillColor : "#c3ffc3",
+                        stroke: theme ? theme.iconStrokeColor : "#028f74"
+                    }}
+                />
+            );
+        case "warning":
+            return (
+                <CircleAlert
+                    style={{
+                        width: "1.65em",
+                        height: "1.65em",
+                        fill: theme ? theme.iconFillColor : "#ffdfaf",
+                        stroke: theme ? theme.iconStrokeColor : "#9c7633"
+                    }}
+                />
+            );
+        case "error":
+            return (
+                <CircleX
+                    style={{
+                        width: "1.65em",
+                        height: "1.65em",
+                        fill: theme ? theme.iconFillColor : "#ffb2b2",
+                        stroke: theme ? theme.iconStrokeColor : "#7f2828"
+                    }}
+                />
+            );
+        case "spinner":
+            return (
+                <div
+                    style={{
+                        width: "1.65em",
+                        height: "1.65em",
+                        boxSizing: "border-box",
+                        border: "2px solid",
+                        borderRadius: "100%",
+                        borderColor: `transparent ${theme ? theme.iconFillColor : "rgb(154 154 255)"}`,
+                        animation: "zcSpin 0.65s linear infinite"
+                    }}
+                />
+            );
+    }
+}
+
+
 function Toast({
-    title, message, type, duration, id
+    title, message, type, duration, id, theme
 }: ToastProps): JSX.Element {
     const [toastStyle, setToastStyle] = useState<React.CSSProperties>({});
     const [isExiting, setIsExiting] = useState(false);
@@ -90,6 +156,7 @@ function Toast({
                 borderRadius: "0.1em",
                 fontSize: (3 * scaleFactor) + "px",
                 padding: (1.5 * scaleFactor) + "px",
+                background: theme ? theme.backgroundColor : type === "success" ? "#3ece7e" : type === "warning" ? "#debf72" : type === "error" ? "rgb(212, 46, 107)" : "rgb(80, 80, 223)"
             });
         };
 
@@ -106,19 +173,15 @@ function Toast({
     return (
         <div className={`zcToast ${isExiting && "exiting"}`} data-zc-toast-type={type} style={toastStyle}>
             <div style={{ display: "flex", alignItems: "center", gap: "1vw", position: "relative", zIndex: 5 }}>
-                {
-                    type === "spinner" ?
-                        <div className="zcSpinner" style={{ width: "2vw", height: "2vw" }} />
-                        : <img src={type === "info" ? infoIcon : type === "success" ? successIcon : type === "warning" ? warningIcon : errorIcon} style={{ width: "2vw" }} />
-                }
+                <ToastIcon type={type} theme={theme} />
                 <div>
                     {
                         title && message &&
                         <>
-                            <p>{title}</p>
+                            <p style={{ color: theme ? theme.titleColor : "white" }}>{title}</p>
                             <p
                                 style={{
-                                    color: type === "info" ? "#b8b8ff" : type === "success" ? "#c7f9c7" : type === "error" ? "#f8bcbc" : "#ffeec5",
+                                    color: theme ? theme.messageColor : (type === "info" || type === "spinner") ? "#b8b8ff" : type === "success" ? "#c7f9c7" : type === "error" ? "#f8bcbc" : "#ffeec5",
                                     fontSize: "70%",
                                     overflowWrap: "anywhere",
                                     marginTop: "0.25em"
@@ -141,16 +204,20 @@ function Toast({
                     }
                 </div>
             </div>
-            <div
-                className="zcToast-ProgressBar"
-                style={{
-                    animation: `zcToast-progress ${duration}ms linear 0s 1 alternate none`,
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    height: "100%"
-                }}
-            />
+            {
+                type !== "spinner" &&
+                <div
+                    className="zcToast-ProgressBar"
+                    style={{
+                        animation: `zcToast-progress ${duration}ms linear 0s 1 alternate none`,
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        height: "100%",
+                        background: theme ? theme.progressBarColor : type === "info" ? "rgb(103, 103, 234)" : type === "success" ? "#34bc71" : type === "warning" ? "#d0af5e" : "rgb(183, 40, 92)"
+                    }}
+                />
+            }
         </div>
     );
 }
@@ -174,7 +241,7 @@ function Dialog({ dialog }: { dialog: DialogProps }): JSX.Element {
                 transform: "translate(-50%, -50%)",
                 background: "rgba(36, 36, 36, 0.96)",
                 zIndex: 20,
-                fontFamily: "ui-sans-serif",
+                fontFamily: CommonGetFontName(),
                 border: "none",
                 padding: 2 * scaleFactor
             });
@@ -266,45 +333,50 @@ function Dialog({ dialog }: { dialog: DialogProps }): JSX.Element {
 
 class ToastsManager {
     private generateToastId(): string {
-        const { toasts } = window.ZOISCORE.useToastsStore.getState();
-        return `${Date.now()}:${toasts.length + 1}`;
+        return crypto.randomUUID();;
     }
 
-    private process({ title, message, duration, type, id }: ToastProps): void {
+    private process({ title, message, duration, type, id, theme }: ToastProps): void {
         const { addToast, removeToast } = window.ZOISCORE.useToastsStore.getState();
         addToast({
             id,
             title,
             message,
             duration,
-            type
+            type,
+            theme
         });
         setTimeout(() => removeToast(id), duration + 300);
     }
 
-    info({ title, message, duration }: Omit<ToastProps, "type" | "id">): void {
+    info({ title, message, duration }: Omit<ToastProps, "type" | "id" | "theme">): void {
         const id = this.generateToastId();
-        this.process({ title, message, duration, type: "info", id });
+        const theme = MOD_DATA.singleToastsTheme;
+        this.process({ title, message, duration, type: "info", id, theme });
     }
 
-    success({ title, message, duration }: Omit<ToastProps, "type" | "id">): void {
+    success({ title, message, duration }: Omit<ToastProps, "type" | "id" | "theme">): void {
         const id = this.generateToastId();
-        this.process({ title, message, duration, type: "success", id });
+        const theme = MOD_DATA.singleToastsTheme;
+        this.process({ title, message, duration, type: "success", id, theme });
     }
 
-    warn({ title, message, duration }: Omit<ToastProps, "type" | "id">): void {
+    warn({ title, message, duration }: Omit<ToastProps, "type" | "id" | "theme">): void {
         const id = this.generateToastId();
-        this.process({ title, message, duration, type: "warning", id });
+        const theme = MOD_DATA.singleToastsTheme;
+        this.process({ title, message, duration, type: "warning", id, theme });
     }
 
-    error({ title, message, duration }: Omit<ToastProps, "type" | "id">): void {
+    error({ title, message, duration }: Omit<ToastProps, "type" | "id" | "theme">): void {
         const id = this.generateToastId();
-        this.process({ title, message, duration, type: "error", id });
+        const theme = MOD_DATA.singleToastsTheme;
+        this.process({ title, message, duration, type: "error", id, theme });
     }
 
-    spinner({ title, message }: Omit<ToastProps, "type" | "id" | "duration">): string {
+    spinner({ title, message }: Omit<ToastProps, "type" | "id" | "duration" | "theme">): string {
         const id = this.generateToastId();
-        this.process({ title, message, duration: 1000000, type: "spinner", id });
+        const theme = MOD_DATA.singleToastsTheme;
+        this.process({ title, message, duration: 1000000, type: "spinner", id, theme });
         return id;
     }
 
@@ -333,8 +405,8 @@ function App(): JSX.Element {
         <>
             <ToastsContainer>
                 {
-                    toasts.map(({ title, message, type, duration, id }) => {
-                        return <Toast id={id} key={id} title={title} message={message} type={type} duration={duration} />;
+                    toasts.map(({ title, message, type, duration, id, theme }) => {
+                        return <Toast id={id} key={id} title={title} message={message} type={type} duration={duration} theme={theme} />;
                     })
                 }
             </ToastsContainer>

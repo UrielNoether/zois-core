@@ -117,6 +117,93 @@
     border-bottom: 2px solid var(--tmd-element-hover, rgb(149, 149, 149));
 }
 
+.zcCard {
+    border: 2px solid var(--tmd-accent, rgb(195, 195, 195));
+    border-radius: 0.4em;
+    background: var(--tmd-element, white);
+    color: var(--tmd-text, black);
+    padding: 0.4em 2.5em 0.4em 0.4em;
+}
+
+.zcCard:hover {
+    border: 2px solid var(--tmd-accent-hover, rgb(170, 170, 170));
+}
+
+.zcCard_name {
+    font-size: 0.5em;
+    color: var(--tmd-text, rgb(100, 100, 100));
+}
+
+.zcCard_value {
+    color: var(--tmd-text, black);
+    margin-top: 0.4em;
+    font-weight: bold;
+}
+
+.zcSelect {
+    cursor: pointer;
+    background: var(--tmd-element, white);
+    color: var(--tmd-text, black);
+    border: 2px solid var(--tmd-accent, rgb(195, 195, 195));
+    border-radius: 0.4em;
+    padding: 0.45em;
+}
+
+.zcSelect[opened="true"] {
+    border-color: var(--tmd-accent-hover, rgb(0, 96, 223));
+}
+
+.zcSelect[opened="false"]:hover {
+    border-color: var(--tmd-accent-hover, rgb(170, 170, 170));
+}
+
+.zcSelect>svg {
+    position: absolute;
+    right: 0.45em;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.5em;
+    height: 1.5em;
+    color: var(--tmd-accent, rgb(0, 96, 223));
+}
+
+.zcSelect>div[data-zc-position="bottom"] {
+    position: absolute;
+    top: calc(100% + 0.45em);
+    left: 0;
+    width: 100%;
+    background: var(--tmd-element, #f6f6f6ed);
+    border: 2px solid var(--tmd-element-hover, rgb(235 235 235));
+    border-radius: 0.4em;
+}
+
+.zcSelect>div[data-zc-position="top"] {
+    position: absolute;
+    bottom: calc(100% + 0.45em);
+    left: 0;
+    width: 100%;
+    background: var(--tmd-element, #f6f6f6ed);
+    border: 2px solid var(--tmd-element-hover, rgb(235 235 235));
+    border-radius: 0.4em;
+}
+
+.zcSelect>div>div {
+    color: var(--tmd-text, black);
+    width: 100%;
+    padding: 0.45em;
+    border-radius: 0.25em;
+}
+
+.zcSelect>div>div>svg {
+    width: 1.25em;
+    height: 1.25em;
+    color: var(--tmd-accent, rgb(0, 96, 223));
+}
+
+.zcSelect>div>div:hover {
+    background: var(--tmd-element-hover, #ededed);
+}
+
 .zcToastsContainer {
     display: flex;
     flex-direction: column;
@@ -124,23 +211,6 @@
     cursor: pointer;
     position: fixed;
     z-index: 10;
-}
-
-.zcToast[data-zc-toast-type="info"],
-.zcToast[data-zc-toast-type="spinner"] {
-    background: rgb(80, 80, 223);
-}
-
-.zcToast[data-zc-toast-type="success"] {
-    background: #3ece7e;
-}
-
-.zcToast[data-zc-toast-type="warning"] {
-    background: #debf72;
-}
-
-.zcToast[data-zc-toast-type="error"] {
-    background: rgb(212, 46, 107);
 }
 
 @keyframes zcToast-progress {
@@ -184,23 +254,6 @@
 
 .zcToast.exiting {
     animation: zcSlideOutToLeft 0.3s ease-out forwards;
-}
-
-.zcToast[data-zc-toast-type="info"] .zcToast-ProgressBar {
-    background: rgb(103, 103, 234);
-}
-
-.zcToast[data-zc-toast-type="success"] .zcToast-ProgressBar {
-    background: #34bc71;
-}
-
-.zcToast[data-zc-toast-type="warning"] .zcToast-ProgressBar {
-    background: #d0af5e;
-
-}
-
-.zcToast[data-zc-toast-type="error"] .zcToast-ProgressBar {
-    background: rgb(183, 40, 92);
 }
 
 .zcToast p {
@@ -247,13 +300,20 @@ dialog[data-zc-dialog-type="choice_multiple"] .zcDialogBtn[data-zc-picked=true]:
     }
 }
 
-.zcSpinner {
-    box-sizing: border-box;
-    border: 2px solid;
-    border-radius: 100%;
-    border-color: #ffffff;
-    border-right-color: #5050df;
-    animation: zcSpin 0.65s linear infinite;
+@keyframes zcCursorBlink {
+    from {
+        border-right-color: transparent;
+    }
+
+    to {
+        border-right-color: rgb(42, 42, 42);
+    }
+}
+
+.zcCursor {
+    border-right: 2px solid var(--tmd-text, rgb(42, 42, 42));
+    width: fit-content;
+    /* animation: zcCursorBlink 0.1s linear infinite; */
 }
 
 .zcDisabled {

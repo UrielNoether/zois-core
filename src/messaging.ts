@@ -1,9 +1,12 @@
+import { ClassConstructor } from "class-transformer";
 import { getPlayer, getRandomNumber, MOD_DATA } from "./index";
 import { hookFunction, HookPriority } from "./modsApi";
 import { setFontFamily } from "./ui";
+import { validateData } from "./validation";
 
 const pendingRequests: Map<string, PendingRequest<any>> = new Map();
 const requestListeners: Map<string, (data: any, sender: Character | number, senderName?: string) => any> = new Map();
+const requestDtos: Map<string, ClassConstructor<unknown>> = new Map();
 
 interface PendingRequest<T> {
 	message: string
@@ -33,49 +36,6 @@ interface BeepRequestData {
 
 type PacketRequestResponseData = PacketRequestData;
 type BeepRequestResponseData = BeepRequestData;
-
-export function handlePacketRequestResponse(requestId: string, data: any): void {
-	const request = pendingRequests.get(requestId);
-	if (!request) return;
-	request.resolve({
-		data
-	});
-}
-
-export function handlePacketRequest(requestId: string, message: string, _data: any, sender: Character): void {
-	const listener = requestListeners.get(message);
-	if (!listener) return;
-	const data = listener(_data, sender);
-	if (data !== undefined) {
-		messagesManager.sendPacket<PacketRequestResponseData>("requestResponse", {
-			requestId,
-			message,
-			data
-		}, sender.MemberNumber);
-	}
-}
-
-export function handleBeepRequestResponse(requestId: string, data: any): void {
-	const request = pendingRequests.get(requestId);
-	if (!request) return;
-	request.resolve({
-		data
-	});
-}
-
-export function handleBeepRequest(requestId: string, message: string, _data: any, senderNumber: number, senderName: string): void {
-	const listener = requestListeners.get(message);
-	if (!listener) return;
-	const data = listener(_data, senderNumber, senderName);
-	if (data !== undefined) {
-		messagesManager.sendBeep<BeepRequestResponseData>({
-			type: `${MOD_DATA.key}_requestResponse`,
-			requestId,
-			message,
-			data
-		}, senderNumber);
-	}
-}
 
 class MessagesManager {
 	sendBeep<T>(data: T, targetId: number): void {
@@ -144,20 +104,32 @@ class MessagesManager {
 		type: "packet" | "beep"
 	}): Promise<RequestResponse<T>> {
 		const requestId = crypto.randomUUID();
-		return new Promise((resolve, reject) => {
-			pendingRequests.set(requestId, {
-				message,
-				data,
-				target,
-				resolve,
-				reject
-			});
+		return new Promise((resolve) => {
+			let deleteHook: () => void;
+
 			if (type === "packet") {
 				messagesManager.sendPacket<PacketRequestData>("request", {
 					requestId,
 					message,
 					data
 				}, target);
+				deleteHook = hookFunction("ChatRoomMessage", HookPriority.ADD_BEHAVIOR, (args, next) => {
+					const _message = args[0];
+					const sender = getPlayer(_message.Sender);
+					if (!sender) return next(args);
+					if (_message.Content === MOD_DATA.key && !sender.IsPlayer()) {
+						const msg = _message.Dictionary.msg;
+						const data = _message.Dictionary.data;
+						if (msg === "requestResponse" && data.requestId === requestId) {
+							deleteHook();
+							resolve({
+								data: data.data,
+								isError: false
+							});
+						}
+					}
+					return next(args);
+				});
 			} else {
 				messagesManager.sendBeep<BeepRequestData>({
 					type: `${MOD_DATA.key}_request`,
@@ -165,9 +137,31 @@ class MessagesManager {
 					message,
 					data
 				}, target);
+				deleteHook = hookFunction("ServerAccountBeep", HookPriority.ADD_BEHAVIOR, (args, next) => {
+					const beep: ServerAccountBeepResponse = args[0];
+					if (beep.BeepType !== "Leash") return next(args);
+
+					let data: any;
+
+					try {
+						data = JSON.parse(beep.Message);
+					} catch {
+						return next(args);
+					}
+
+					if (data.type === `${MOD_DATA.key}_requestResponse` && data.requestId === requestId) {
+						deleteHook();
+						resolve({
+							data: data.data,
+							isError: false
+						});
+					}
+					return next(args);
+				});
 			}
+
 			setTimeout(() => {
-				pendingRequests.delete(requestId);
+				deleteHook();
 				resolve({
 					isError: true
 				});
@@ -198,12 +192,107 @@ class MessagesManager {
 		ServerSend("ChatRoomChat", { Type: "Chat", Content: message });
 	}
 
-	onRequest(message: string, listener: (data: any, sender: Character | number, senderName?: string) => unknown): void {
-		requestListeners.set(message, listener);
+	onRequest(
+		message: string,
+		listener: (data: any, sender: Character | number, senderName?: string) => unknown
+	): void
+	onRequest(
+		message: string,
+		dto: ClassConstructor<unknown>,
+		listener: (data: any, sender: Character | number, senderName?: string) => unknown
+	): void
+	onRequest(
+		message: string,
+		dtoOrListener: ClassConstructor<unknown> | ((data: any, sender: Character | number, senderName?: string) => unknown),
+		listener?: (data: any, sender: Character | number, senderName?: string) => unknown
+	): void {
+		let _listener: (data: any, sender: Character | number, senderName?: string) => unknown;
+		let dto: ClassConstructor<unknown>;
+		if (
+			typeof dtoOrListener === "function" &&
+			dtoOrListener.prototype?.constructor == dtoOrListener
+		) {
+			dto = dtoOrListener as ClassConstructor<unknown>;
+			_listener = listener;
+		} else _listener = dtoOrListener as (data: any, sender: Character | number, senderName?: string) => unknown;
+
+		hookFunction("ChatRoomMessage", HookPriority.ADD_BEHAVIOR, async (args, next) => {
+			const _message = args[0];
+			const sender = getPlayer(_message.Sender);
+			if (!sender) return next(args);
+			if (_message.Content === MOD_DATA.key && !sender.IsPlayer()) {
+				const msg = _message.Dictionary?.msg;
+				const data = _message.Dictionary?.data;
+				if (msg === "request" && data.message === message) {
+					if (typeof data.requestId !== "string" || typeof data.message !== "string") return;
+					if (dto && !(await validateData(data.data, dto)).isValid) return next(args);
+					const _data = _listener(data.data, sender);
+					if (_data !== undefined) {
+						messagesManager.sendPacket<PacketRequestResponseData>("requestResponse", {
+							requestId: data.requestId,
+							message: data.message,
+							data: _data
+						}, sender.MemberNumber);
+					}
+				}
+			}
+			return next(args);
+		});
+
+		hookFunction("ServerAccountBeep", HookPriority.ADD_BEHAVIOR, async (args, next) => {
+			const beep: ServerAccountBeepResponse = args[0];
+			if (beep.BeepType !== "Leash") return next(args);
+
+			let data: any;
+
+			try {
+				data = JSON.parse(beep.Message);
+			} catch {
+				return next(args);
+			}
+
+			if (data.type === `${MOD_DATA.key}_request` && data.message === message) {
+				if (typeof data.requestId !== "string") return;
+				if (dto && !(await validateData(data.data, dto)).isValid) return next(args);
+				const _data = _listener(data.data, beep.MemberNumber, beep.MemberName);
+				if (_data !== undefined) {
+					messagesManager.sendBeep<BeepRequestResponseData>({
+						type: `${MOD_DATA.key}_requestResponse`,
+						requestId: data.requestId,
+						message: data.message,
+						data: data.data
+					}, beep.MemberNumber);
+				}
+			}
+			return next(args);
+		});
 	}
 
-	onPacket(message: string, listener: (data: any, sender: Character) => void): void {
-		hookFunction("ChatRoomMessage", HookPriority.ADD_BEHAVIOR, (args, next) => {
+	onPacket(
+		message: string,
+		listener: (data: any, sender: Character) => void,
+	): void
+	onPacket(
+		message: string,
+		dto: ClassConstructor<unknown>,
+		listener: (data: any, sender: Character) => void,
+	): void
+	onPacket(
+		message: string,
+		dtoOrListener: ClassConstructor<unknown> | ((data: any, sender: Character) => void),
+		listener?: (data: any, sender: Character) => void,
+	): void {
+		hookFunction("ChatRoomMessage", HookPriority.ADD_BEHAVIOR, async (args, next) => {
+			let _listener: (data: any, sender: Character) => void;
+			let dto: ClassConstructor<unknown>;
+			if (
+				typeof dtoOrListener === "function" &&
+				dtoOrListener.prototype?.constructor == dtoOrListener
+			) {
+				dto = dtoOrListener as ClassConstructor<unknown>;
+				_listener = listener;
+			} else _listener = dtoOrListener as (data: any, sender: Character) => void;
+
 			const _message = args[0];
 			const sender = getPlayer(_message.Sender);
 			if (!sender) return next(args);
@@ -211,7 +300,10 @@ class MessagesManager {
 				_message.Content === MOD_DATA.key &&
 				_message.Dictionary.msg === message &&
 				!sender.IsPlayer()
-			) listener(_message.Dictionary.data, sender);
+			) {
+				if (dto && !(await validateData(_message.Dictionary?.data, dto)).isValid) return next(args);
+				_listener(_message.Dictionary.data, sender);
+			}
 			return next(args);
 		});
 	}
