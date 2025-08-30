@@ -1,4 +1,4 @@
-import { BaseModule, Context, ModuleTarget } from "@/modules";
+import { BaseModule, Context, ModuleTarget } from "../modules";
 
 
 export class StyleModule extends BaseModule {
