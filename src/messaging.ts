@@ -177,7 +177,7 @@ class MessagesManager {
 		div.setAttribute("data-time", ChatRoomCurrentTime());
 		div.setAttribute("data-sender", `${Player.MemberNumber}`);
 		setFontFamily(div, MOD_DATA.fontFamily);
-		div.style.background = MOD_DATA.chatMessageBackground ?? "#55edc095";
+		div.style.background = MOD_DATA.chatMessageBackground ?? "#ED55E890"; //#55edc095 last two digits are alpha transparency
 		div.style.color = MOD_DATA.chatMessageColor ?? "black";
 		div.style.margin = "0.15em 0";
 
